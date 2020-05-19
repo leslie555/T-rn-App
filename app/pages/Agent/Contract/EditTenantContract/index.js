@@ -1,10 +1,10 @@
 import React, {Component} from 'react'
-import {Alert, Button, Linking, Platform, Text, TouchableOpacity, View} from 'react-native'
+import {Alert, Button, Linking, Platform, Text, TouchableOpacity, View,Image} from 'react-native'
 import styles from '../EditOwnerContract/style'
 import {BillPanel} from '../EditOwnerContract/components'
 import {GiftedForm, GiftedFormManager} from '../../../../components/Form/GiftedForm'
 import {connect} from 'react-redux'
-import {ButtonGroup, FullModal, Header, StepsBox, UploadFile} from "../../../../components";
+import {ButtonGroup, FullModal, Header, StepsBox, UploadFile, UploadFileSingle} from "../../../../components";
 import {
   AppGetContractTenantDetail,
   editTenantContract,
@@ -13,7 +13,7 @@ import {
   QueryHouseContractStatus
 } from "../../../../api/tenant";
 import {StateTenContract} from "../../../../api/system";
-import {searchHouseConfig} from "../../../../api/house";
+import {searchHouseConfig, QueryOrderByHouseID} from "../../../../api/house";
 import {deepCopy, DiffArrFn, isDiffObj} from "../../../../utils/arrUtil";
 import {dateFormat} from "../../../../utils/dateFormat";
 import Toast from 'react-native-root-toast';
@@ -21,13 +21,14 @@ import IconFont from "../../../../utils/IconFont";
 import store from "../../../../redux/store/store";
 import {updateContractDetail} from "../../../../redux/actions/contract";
 import {updateList} from "../../../../redux/actions/list";
-import {validateNumber, validatePhoneNumber} from "../../../../utils/validate";
+import {validateNumber, validatePhoneNumber, validateCard, validateEmailNumber} from "../../../../utils/validate";
 import {showSelectAny} from "../../../../components/SelectAny/util";
+import NationData from './nation.json'
 
 class TenantContract extends React.Component {
   constructor(props) {
     super(props)
-    this.numberPad = Platform.OS === 'ios' ? `numbers-and-punctuation`: `number-pad`
+    this.numberPad = Platform.OS === 'ios' ? `numbers-and-punctuation` : `number-pad`
     this.stepList = [
       {
         title: '承租人信息'
@@ -43,14 +44,12 @@ class TenantContract extends React.Component {
     this.refBillPanel = null
     this.EnumData = {
       Sex: [],
-      TenantStageType: [],
+      Relationship: [],
       DepositModel: [],
       PayModel: [],
       RentIncludeCost: [],
       PayTimeType: [],
       PaperType: [],
-      IncreaseType: [],
-      IncreaseFrequency: [],
       MaxLiverCount: []
     } //枚举类型
     this.EnumProps = {
@@ -60,14 +59,20 @@ class TenantContract extends React.Component {
     this.query = this.props.navigation.state.params || {} // 路由参数 KeyID,Renew
     this.editType = this.query.Renew ? 2 : (this.query.KeyID ? 1 : 0) // 0新增 1修改 2续约
     this.headerTitle = ['新增租客合同', '修改租客合同', '续约租客合同'][this.editType]
-    this.isLoadBookKeep = false
     this.isLoadBillList = false
     this.cloneData = {
       ImageUpload: [],
-      BookKeep: [],
       OutRoomInfoList: [],
       LivePeopleInfoList: [],
-      PassengerChannel: []
+      PassengerChannel: [],
+      EducationLevels: [],
+      Nation: [],
+      MarryStatus: [],
+      TenantBill: [],
+      CardIDFront: [],
+      CardIDBack: [],
+      AgentCardIDFront: [],
+      AgentCardIDBack: [],
     } // clone的旧数据
     this.billForm = {}// 账单表单 用于对比是否修改了账单
     this.BillList = [] // 账单信息
@@ -78,6 +83,7 @@ class TenantContract extends React.Component {
         PaperType: 0,
         ContractTemplateName: '',
         ContractNumber: '',
+        HouseNumberMark: '',
         TenantName: '',
         TenantPhone: '',
         TenantCard: '',
@@ -88,26 +94,38 @@ class TenantContract extends React.Component {
         AgentName: '',
         AgentPhone: '',
         AgentCard: '',
+        AgentAddress: '',
         TenantContractRemark: '',
+        DiscountPolicy: '',
         HostTimeMark: [],
         DepositModel: 1,
         PayModel: 3,
         HouseRent: '',
         HouseDeposit: '',
+        ManagerFee: 0,
+        EntranceID: 0,
         IsPayStageMark: false,
-        TenantStageType: 0,
-        PayStageTimeMark: [],
-        IncreaseNum: '',
-        IncreaseMoney: '',
-        IncreaseType: 0,
-        IncreaseFrequency: 1,
-        PayDays: 15,
+        IsSubstituteMark: false,
+        PayDays: 30,
         PayTimeType: 0,
         MaxLiverCount: 1,
         PassengerChannel: 0,
+        EducationLevels: 0,
+        Profession: '',
+        PermanentAddress: '',
+        MarryStatus: 0,
+        Nation: '',
         WaterBaseNumber: '',
+        PropertyManageFee: '',
         ElectricityBaseNumber: '',
-        GasBaseNumber: ''
+        GasBaseNumber: '',
+        CardIDFront: [],
+        CardIDBack: [],
+        AgentCardIDFront: [],
+        AgentCardIDBack: [],
+        Email: '',
+        WeChatNumber: '',
+        DisputeSettlement: 0
       },
       detailLoading: false,
       billLoading: false,
@@ -127,6 +145,12 @@ class TenantContract extends React.Component {
       ], // 按钮组
       Decoration: [], // 所有装修情况数据
       TenantConTractQuipment: [], //房屋设备
+      EntranceIDList: [
+        {
+          label: '请选择',
+          value: 0
+        }
+      ], //预订单编号
     }
 
     // 路由监听
@@ -189,15 +213,28 @@ class TenantContract extends React.Component {
   initEnumData() {
     const Sex = this.props.enumList.EnumSex.slice()
     this.EnumData.Sex = Sex
-    const TenantStageType = this.props.enumList.EnumTenantStageType.slice()
-    TenantStageType.shift()
-    this.EnumData.TenantStageType = TenantStageType
-    const IncreaseType = this.props.enumList.EnumIncreaseType.slice()
-    IncreaseType.splice(1, 1) // 删除掉不规则递增
-    this.EnumData.IncreaseType = IncreaseType
+    const Relationship = this.props.enumList.EnumRelationship.slice()
+    Relationship.unshift({
+      Description: '请选择',
+      Value: 0
+    })
+    this.EnumData.Relationship = Relationship
     const PassengerChannel = this.props.enumList.EnumPassengerChannel.slice()
     PassengerChannel[0].Description = '无'
     this.EnumData.PassengerChannel = PassengerChannel
+    const EducationLevels = this.props.enumList.EnumEducationLevels.slice()
+    EducationLevels.unshift({
+      Description: '请选择',
+      Value: 0
+    })
+    this.EnumData.EducationLevels = EducationLevels
+    const MarryStatus = this.props.enumList.EnumMarryStatus.slice()
+    MarryStatus.unshift({
+      Description: '请选择',
+      Value: 0
+    })
+    this.EnumData.MarryStatus = MarryStatus
+    this.EnumData.Nation = NationData
     this.EnumData.DepositModel = [
       {
         label: '1',
@@ -212,12 +249,30 @@ class TenantContract extends React.Component {
         value: 3
       }
     ]
-    this.EnumData.PayModel = new Array(12).fill('').map((x, i) => {
-      return {
-        label: i + 1 + '',
-        value: i + 1
+    // this.EnumData.PayModel = new Array(12).fill('').map((x, i) => {
+    //   return {
+    //     label: i + 1 + '',
+    //     value: i + 1
+    //   }
+    // })
+    this.EnumData.PayModel = [
+      {
+        label: '月付',
+        value: 1
+      },
+      {
+        label: '季付',
+        value: 3
+      },
+      {
+        label: '半年付',
+        value: 6
+      },
+      {
+        label: '年付',
+        value: 12
       }
-    })
+    ]
     this.EnumData.MaxLiverCount = new Array(30).fill('').map((x, i) => {
       return {
         label: i + 1 + '',
@@ -234,22 +289,12 @@ class TenantContract extends React.Component {
         value: 1
       },
       {
-        label: '固定几号（提前一个月）',
+        label: '固为上一个月的几号',
         value: 2
       },
       {
-        label: '固定几号（延后一个月）',
+        label: '固定为下一个月的几号',
         value: 3
-      }
-    ]
-    this.EnumData.IncreaseFrequency = [
-      {
-        label: '一次',
-        value: 1
-      },
-      {
-        label: '每年',
-        value: 2
       }
     ]
     this.EnumData.PaperType = [
@@ -272,6 +317,20 @@ class TenantContract extends React.Component {
       })
       return false
     }
+    if (form.PaperType === 0 && !validateCard(form.TenantCard)) {
+      Toast.show('承租人身份证格式不正确', {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM
+      })
+      return false
+    }
+    if (!validateEmailNumber(form.Email)) {
+      Toast.show('承租人电子邮箱格式不正确', {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM
+      })
+      return false
+    }
     if (!validatePhoneNumber(form.EmergencyContactPhone)) {
       Toast.show('紧急联系人电话格式不正确', {
         duration: Toast.durations.SHORT,
@@ -281,6 +340,13 @@ class TenantContract extends React.Component {
     }
     if (!validatePhoneNumber(form.AgentPhone)) {
       Toast.show('代办人电话格式不正确', {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM
+      })
+      return false
+    }
+    if (!validateCard(form.AgentCard)) {
+      Toast.show('代办人身份证格式不正确', {
         duration: Toast.durations.SHORT,
         position: Toast.positions.BOTTOM
       })
@@ -309,21 +375,14 @@ class TenantContract extends React.Component {
       return false
     }
     if (!validateNumber(form.HouseDeposit, options1)) {
-      Toast.show(`房屋押金` + msg1, {
+      Toast.show(`押金` + msg1, {
         duration: Toast.durations.SHORT,
         position: Toast.positions.BOTTOM
       })
       return false
     }
-    if (!validateNumber(form.IncreaseNum, options2)) {
-      Toast.show(`递增年` + msg2, {
-        duration: Toast.durations.SHORT,
-        position: Toast.positions.BOTTOM
-      })
-      return false
-    }
-    if (!validateNumber(form.IncreaseMoney, options1)) {
-      Toast.show(`递增值` + msg1, {
+    if (!validateNumber(form.ManagerFee, options1)) {
+      Toast.show(`管理服务费` + msg1, {
         duration: Toast.durations.SHORT,
         position: Toast.positions.BOTTOM
       })
@@ -339,6 +398,16 @@ class TenantContract extends React.Component {
         position: Toast.positions.BOTTOM
       })
       return false
+    }
+    if (form.EntranceID) {
+      const item = this.state.EntranceIDList.find(x => x.value === form.EntranceID)
+      if (!item) {
+        Toast.show(`预定单编号已被使用,请重新选择或清空！`, {
+          duration: Toast.durations.SHORT,
+          position: Toast.positions.BOTTOM
+        })
+        return false
+      }
     }
     return true
   }
@@ -365,6 +434,21 @@ class TenantContract extends React.Component {
     }
     if (!validateNumber(form.GasBaseNumber, options1)) {
       Toast.show(`天然气底数` + msg1, {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM
+      })
+      return false
+    }
+    if (!validateNumber(form.PropertyManageFee, options1)) {
+      Toast.show(`物管费` + msg1, {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM
+      })
+      return false
+    }
+    debugger
+    if (form.DisputeSettlement === 0) {
+      Toast.show(`争议处理方式不能为空`, {
         duration: Toast.durations.SHORT,
         position: Toast.positions.BOTTOM
       })
@@ -440,6 +524,15 @@ class TenantContract extends React.Component {
                   value={ContractInfo.ContractNumber + ''}
               />
           }
+          {this.editType === 1 && 
+            <GiftedForm.TextInputWidget
+                name='HouseNumberMark'
+                title='系统编号'
+                disabled
+                maxLength={50}
+                value={ContractInfo.HouseNumberMark + ''}
+            />
+          }
           <GiftedForm.NoticeWidget title={`房源信息`}/>
           <GiftedForm.LabelWidget
               name='HouseName'
@@ -451,10 +544,16 @@ class TenantContract extends React.Component {
               value={HouseInfo.HouseName}
           />
           <GiftedForm.NoticeWidget title={`承租人信息`}/>
+          <GiftedForm.NoticeWidget widgetStyles={{noticeRow: {backgroundColor: '#fff',paddingTop:5,paddingBottom:0},noticeTitle:{color:'#333',fontSize:15}}} required={this.state.ContractInfo.PaperType === 0} title={`添加承租人身份证`}/>
+          <UploadFile list={this.state.ContractInfo.CardIDFront} single={true} btnText='头像面'
+              onChange={(data) => {this.onUploadFileChange(data,1)}}>
+                <UploadFileSingle list={this.state.ContractInfo.CardIDBack} single={true} btnText='国徽面'
+              onChange={(data) => {this.onUploadFileChange(data,2)}}/>
+          </UploadFile>
           <GiftedForm.TextInputWidget
               name='TenantName'
               title='承租人姓名'
-              maxLength={10}
+              maxLength={14}
               value={ContractInfo.TenantName + ''}
               onChangeText={(val) => {
                 this.changeLivePeople(val, 'LiverName')
@@ -489,11 +588,65 @@ class TenantContract extends React.Component {
                 this.changeLivePeople(val, 'LiverSex')
               }}
           />
+          <GiftedForm.PickerWidget
+              name='EducationLevels'
+              title='文化程度'
+              required={false}
+              data={this.EnumData.EducationLevels}
+              value={ContractInfo.EducationLevels}
+              mapKey={this.EnumProps}
+          />
+          <GiftedForm.PickerWidget
+              name='Nation'
+              title='民族'
+              required={false}
+              data={this.EnumData.Nation}
+              value={ContractInfo.Nation}
+          />
+          <GiftedForm.TextInputWidget
+              name='Email'
+              title='承租人电子邮箱'
+              required={false}
+              maxLength={30}
+              value={ContractInfo.Email + ''}
+          />
+          <GiftedForm.TextInputWidget
+              name='WeChatNumber'
+              title='微信号'
+              required={false}
+              maxLength={30}
+              value={ContractInfo.WeChatNumber + ''}
+          />
+          <GiftedForm.TextInputWidget
+              name='Profession'
+              title='职业'
+              required={false}
+              maxLength={30}
+              value={ContractInfo.Profession + ''}
+          />
+          <GiftedForm.PickerWidget
+              name='MarryStatus'
+              title='婚姻状况'
+              required={false}
+              data={this.EnumData.MarryStatus}
+              value={ContractInfo.MarryStatus}
+              mapKey={this.EnumProps}
+          />
+          <GiftedForm.TextInputWidget
+              inline={false}
+              name='PermanentAddress'
+              title='户籍地址'
+              required={false}
+              placeholder='请输入户籍地址'
+              maxLength={50}
+              numberOfLines={2}
+              value={ContractInfo.PermanentAddress + ''}
+          />
           <GiftedForm.TextInputWidget
               name='EmergencyContactName'
               title='紧急联系人姓名'
               required={false}
-              maxLength={10}
+              maxLength={14}
               value={ContractInfo.EmergencyContactName + ''}
               onChangeText={(val) => {
                 this.changeLivePeople(val, 'EmergencyContactName')
@@ -526,10 +679,20 @@ class TenantContract extends React.Component {
               value={ContractInfo.IsAgentMark}
           />
           {ContractInfo.IsAgentMark &&
+          <GiftedForm.NoticeWidget widgetStyles={{noticeRow: {backgroundColor: '#fff',paddingTop:5,paddingBottom:0},noticeTitle:{color:'#333',fontSize:15}}} required={this.state.ContractInfo.PaperType === 0} title={`添加代办人身份证`}/>
+          }
+          {ContractInfo.IsAgentMark &&
+          <UploadFile list={this.state.ContractInfo.AgentCardIDFront} single={true} btnText='头像面'
+              onChange={(data) => {this.onUploadFileChange(data,3)}}>
+                <UploadFileSingle list={this.state.ContractInfo.AgentCardIDBack} single={true} btnText='国徽面'
+              onChange={(data) => {this.onUploadFileChange(data,4)}}/>
+          </UploadFile>
+          }
+          {ContractInfo.IsAgentMark &&
           <GiftedForm.TextInputWidget
               name='AgentName'
               title='代办人姓名'
-              maxLength={10}
+              maxLength={14}
               value={ContractInfo.AgentName + ''}
           />}
           {ContractInfo.IsAgentMark &&
@@ -548,6 +711,18 @@ class TenantContract extends React.Component {
               keyboardType={this.numberPad}
               value={ContractInfo.AgentCard + ''}
           />}
+          {ContractInfo.IsAgentMark && 
+            <GiftedForm.TextInputWidget
+              inline={false}
+              name='AgentAddress'
+              title='代办人通讯地址'
+              required={false}
+              placeholder='请输入代办人通讯地址'
+              maxLength={50}
+              numberOfLines={2}
+              value={ContractInfo.AgentAddress + ''}
+          />
+          }
           <GiftedForm.NoticeWidget title={`入住人信息`} rightView={
             <TouchableOpacity onPress={() => this.handleLiveInAdd()} style={styles.add_owner_btn_box}>
               <Text style={styles.add_owner_btn_text}>添加入住人</Text>
@@ -573,7 +748,7 @@ class TenantContract extends React.Component {
                   <GiftedForm.TextInputWidget
                       name={`LiverName${index}`}
                       title='入住人姓名'
-                      maxLength={10}
+                      maxLength={14}
                       onChangeText={(val) => {
                         this.liveInInfoChange(val, index, 'LiverName')
                       }}
@@ -582,7 +757,7 @@ class TenantContract extends React.Component {
                   <GiftedForm.TextInputWidget
                       name={`LiverPhone${index}`}
                       title='入住人电话'
-                      maxLength={20}
+                      maxLength={11}
                       onChangeText={(val) => {
                         this.liveInInfoChange(val, index, 'LiverPhone')
                       }}
@@ -609,6 +784,17 @@ class TenantContract extends React.Component {
                         this.liveInInfoChange(val, index, 'LiverSex')
                       }}
                   />
+                  {index>0 && <GiftedForm.PickerWidget
+                      name={`Relationship${index}`}
+                      title='入住人关系'
+                      required={false}
+                      data={this.EnumData.Relationship}
+                      value={item.Relationship}
+                      mapKey={this.EnumProps}
+                      onPickerConfirm={(val) => {
+                        this.liveInInfoChange(val, index, 'Relationship')
+                      }}
+                  />}
                 </View>
             )
           })}
@@ -636,7 +822,7 @@ class TenantContract extends React.Component {
                 </View>
             )
           })}
-          <GiftedForm.NoticeWidget title={`添加附件`}/>
+          <GiftedForm.NoticeWidget title={`其他附件`}/>
           <UploadFile list={this.state.ImageUpload} type={`AgentEditTenantContract`}
                       onChange={(data) => this.onUploadFileChange(data)}/>
         </GiftedForm>
@@ -649,23 +835,43 @@ class TenantContract extends React.Component {
         <GiftedForm
             formName='EditTenantContractRuleForm1'
         >
-          <GiftedForm.NoticeWidget title={`租约信息`}/>
+          <GiftedForm.NoticeWidget title={`租约信息`} rightView={
+            <View style={styles.fast_change_time_box}>
+              <TouchableOpacity style={styles.fast_change_time_box_item} onPress={() => this.fastChangeTime(1)}>
+                <Text style={styles.owner_header_right_text}>半年</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.fast_change_time_box_item} onPress={() => this.fastChangeTime(2)}>
+                <Text style={styles.owner_header_right_text}>一年</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.fast_change_time_box_item} onPress={() => this.fastChangeTime(4)}>
+                <Text style={styles.owner_header_right_text}>两年</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.fast_change_time_box_item} onPress={() => this.fastChangeTime(6)}>
+                <Text style={styles.owner_header_right_text}>三年</Text>
+              </TouchableOpacity>
+            </View>
+          }/>
           <GiftedForm.DatePickerRangeWidget
               name='HostTimeMark'
               cannotEqual
               title='租期时间'
+              onChangeText={(val) => {
+                this.HostTimeMarkChange(val)
+              }}
               value={ContractInfo.HostTimeMark}
           />
-          <GiftedForm.NoticeWidget title={`付款方式`}/>
-          <GiftedForm.PickerWidget
+          {/* <GiftedForm.PickerWidget
               name='DepositModel'
               title='押'
               data={this.EnumData.DepositModel}
               value={ContractInfo.DepositModel}
-          />
+          /> */}
           <GiftedForm.PickerWidget
               name='PayModel'
-              title='付'
+              title='付款方式'
+              onPickerConfirm={(val) => {
+                this.PayModelChange(val)
+              }}
               data={this.EnumData.PayModel}
               value={ContractInfo.PayModel}
           />
@@ -682,11 +888,26 @@ class TenantContract extends React.Component {
           />
           <GiftedForm.TextInputWidget
               name='HouseDeposit'
-              title='房屋押金'
+              title='押金'
               maxLength={6}
               keyboardType={this.numberPad}
               value={ContractInfo.HouseDeposit + ''}
               tail={`元`}
+          />
+          <GiftedForm.TextInputWidget
+              name='ManagerFee'
+              title='管理服务费'
+              maxLength={6}
+              keyboardType={this.numberPad}
+              value={ContractInfo.ManagerFee + ''}
+              tail={`元/月`}
+          />
+          <GiftedForm.PickerWidget
+              name='EntranceID'
+              title='定金收据编号'
+              required={false}
+              data={this.state.EntranceIDList}
+              value={ContractInfo.EntranceID}
           />
           <GiftedForm.SwitchWidget
               name='IsPayStageMark'
@@ -695,59 +916,12 @@ class TenantContract extends React.Component {
               onSwitchChange={(val) => this.stageChange(val)}
               value={ContractInfo.IsPayStageMark}
           />
-          {ContractInfo.IsPayStageMark &&
-          <GiftedForm.PickerWidget
-              name='TenantStageType'
-              title='分期类型'
-              data={this.EnumData.TenantStageType}
-              value={ContractInfo.TenantStageType}
-              mapKey={this.EnumProps}
+          <GiftedForm.SwitchWidget
+              name='IsSubstituteMark'
+              title='是否代缴水电气'
+              onSwitchChange={(val) => this.substituteChange(val)}
+              value={ContractInfo.IsSubstituteMark}
           />
-          }
-          {ContractInfo.IsPayStageMark &&
-          <GiftedForm.DatePickerRangeWidget
-              name='PayStageTimeMark'
-              cannotEqual
-              title='分期时间'
-              value={ContractInfo.PayStageTimeMark}
-          />
-          }
-          <GiftedForm.NoticeWidget title={`递增方式`}/>
-          <GiftedForm.PickerWidget
-              name='IncreaseType'
-              title='递增方式'
-              data={this.EnumData.IncreaseType}
-              value={ContractInfo.IncreaseType}
-              mapKey={this.EnumProps}
-              onPickerConfirm={(val) => {
-                this.contractInfoChange(val, 'IncreaseType')
-              }}
-          />
-          {(ContractInfo.IncreaseType == 2 || ContractInfo.IncreaseType == 3) &&
-          <GiftedForm.PickerWidget
-              name='IncreaseFrequency'
-              title='递增频率'
-              data={this.EnumData.IncreaseFrequency}
-              value={ContractInfo.IncreaseFrequency}
-          />}
-          {(ContractInfo.IncreaseType == 2 || ContractInfo.IncreaseType == 3) &&
-          <GiftedForm.TextInputWidget
-              name='IncreaseNum'
-              title='第几年递增'
-              maxLength={2}
-              keyboardType={this.numberPad}
-              value={ContractInfo.IncreaseNum + ''}
-              tail={`年`}
-          />}
-          {(ContractInfo.IncreaseType == 2 || ContractInfo.IncreaseType == 3) &&
-          <GiftedForm.TextInputWidget
-              name='IncreaseMoney'
-              title='递增值'
-              maxLength={6}
-              keyboardType={this.numberPad}
-              value={ContractInfo.IncreaseMoney + ''}
-              tail={ContractInfo.IncreaseType == 3 ? '%/年' : '元/年'}
-          />}
           <GiftedForm.NoticeWidget title={`最晚付款日规则`}/>
           <GiftedForm.PickerWidget
               name='PayTimeType'
@@ -760,20 +934,28 @@ class TenantContract extends React.Component {
           />
           <GiftedForm.TextInputWidget
               name='PayDays'
-              title={ContractInfo.PayTimeType == 0 ? '最晚付款天数' : '最晚付款日'}
+              title={this.EnumData.PayTimeType[ContractInfo.PayTimeType].label}
               maxLength={2}
               keyboardType={this.numberPad}
               value={ContractInfo.PayDays + ''}
               tail={ContractInfo.PayTimeType == 0 ? '天' : '号'}
           />
-          <GiftedForm.NoticeWidget title={`租金包含费用`}/>
-          <GiftedForm.LabelWidget
-              title='租金包含费用'
+          {/*<GiftedForm.NoticeWidget title={`租金包含费用`}/>*/}
+          {/*<GiftedForm.LabelWidget*/}
+              {/*title='租金包含费用'*/}
+              {/*required={false}*/}
+              {/*value={this.state.RentIncludeCost.length === 0 ? '请选择' : `已选择${this.state.RentIncludeCost.length}个`}*/}
+              {/*onLabelPress={() => {*/}
+                {/*this.showRentIncludeCostFn()*/}
+              {/*}}*/}
+          {/*/>*/}
+          <GiftedForm.NoticeWidget title={`优惠政策`}/>
+          <GiftedForm.TextAreaWidget
+              name='DiscountPolicy'
               required={false}
-              value={this.state.RentIncludeCost.length === 0 ? '请选择' : `已选择${this.state.RentIncludeCost.length}个`}
-              onLabelPress={() => {
-                this.showRentIncludeCostFn()
-              }}
+              placeholder='请输入优惠政策'
+              maxLength={1500}
+              value={ContractInfo.DiscountPolicy}
           />
         </GiftedForm>
     )
@@ -781,7 +963,7 @@ class TenantContract extends React.Component {
 
   getStep3View() {
     return (
-        <BillPanel type={1} navigation={this.props.navigation} houseInfo={this.state.HouseInfo} ref={(refSteps) => {
+        <BillPanel type={1} navigation={this.props.navigation} contract={this.state.ContractInfo} houseInfo={this.state.HouseInfo} ref={(refSteps) => {
           this.refBillPanel = refSteps
         }}/>
     )
@@ -793,12 +975,22 @@ class TenantContract extends React.Component {
         <GiftedForm
             formName='EditTenantContractRuleForm3'
         >
+          <View style={styles.step_notice}> 
+           <Image
+                source={require('./images/notice.png')}
+                style={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: 5
+                }}
+            />
+            <Text style={styles.step_notice_text}>如有附加条款，请在页面最下方输入栏中输入</Text>
+          </View>
           <GiftedForm.NoticeWidget title={`交割信息`}/>
           <GiftedForm.TextInputWidget
               name='WaterBaseNumber'
               title='水表底数'
               maxLength={7}
-              required={false}
               keyboardType={this.numberPad}
               value={ContractInfo.WaterBaseNumber + ''}
           />
@@ -806,7 +998,6 @@ class TenantContract extends React.Component {
               name='ElectricityBaseNumber'
               title='电表底数'
               maxLength={7}
-              required={false}
               keyboardType={this.numberPad}
               value={ContractInfo.ElectricityBaseNumber + ''}
           />
@@ -814,7 +1005,6 @@ class TenantContract extends React.Component {
               name='GasBaseNumber'
               title='气表底数'
               maxLength={7}
-              required={false}
               keyboardType={this.numberPad}
               value={ContractInfo.GasBaseNumber + ''}
               tail={`m³`}
@@ -841,6 +1031,34 @@ class TenantContract extends React.Component {
                 />
             )
           })}
+          <GiftedForm.NoticeWidget title={`其他费用`}/>
+          <GiftedForm.TextInputWidget
+              name='PropertyManageFee'
+              title='物管费'
+              maxLength={7}
+              required={false}
+              keyboardType={this.numberPad}
+              value={ContractInfo.PropertyManageFee + ''}
+              tail={`元/月`}
+          />
+          <GiftedForm.NoticeWidget required title={`争议处理方式`}/>
+          <GiftedForm.RadioWidget
+              name='DisputeSettlement'
+              options={
+                [
+                  {
+                    label: '提交仲裁委员会仲裁',
+                    value: 1
+                  },
+                  {
+                    label: '依法向房屋所在地人民法院提起诉讼。一方产生的诉讼费、律师费、保全费、执行费等维权费用由违约方承担',
+                    value: 2
+                  }
+                ]
+              }
+              required={false}
+              value={ContractInfo.DisputeSettlement}
+          />
           <GiftedForm.NoticeWidget title={`附加条款`}/>
           <GiftedForm.TextAreaWidget
               name='TenantContractRemark'
@@ -893,80 +1111,112 @@ class TenantContract extends React.Component {
     if (this.editType === 2) {
       TenantBill = []
       BookKeep = []
+      if (TenantContractInfo) {
+        TenantContractInfo.PaperType = 0
+      }
     }
     if (TenantContractOperate) {
       ContractStateModel.TenantContractOperate = TenantContractOperate
     }
     if (HouseInfo) {
-      this.selectHouse(HouseInfo, ContractStateModel.ContractInfo)
+      this.selectHouse(HouseInfo, ContractStateModel.ContractInfo,1)
     }
     if (ImageUpload) {
       ContractStateModel.ImageUpload = ImageUpload
-      this.cloneData.ImageUpload = deepCopy(ImageUpload)
+      if (this.editType !== 2) {
+        this.cloneData.ImageUpload = deepCopy(ImageUpload)
+      }
     }
     if (BookKeep && BookKeep.length > 0) {
       this.BookKeep = BookKeep
-      this.cloneData.BookKeep = deepCopy(BookKeep)
-      // this.refBillPanel.initBookData(BookKeep)
     }
     if (TenantBill && TenantBill.length > 0) {
       this.BillList = TenantBill
+      this.cloneData.TenantBill = deepCopy(TenantBill)
       // this.refBillPanel.initBillData(TenantBill)
     }
     if (TenantContractInfo) {
-      if (!TenantContractInfo.IncreaseFrequency) {
-        TenantContractInfo.IncreaseFrequency = 0
-        ContractStateModel.ContractInfo.IncreaseFrequency = 0
-      }
       if (!TenantContractInfo.KeyID) {
         // 预定签合同 和房源签合同
-        // this.state.ContractInfo.StartTime = TenantContractInfo.StartTime
-        // this.state.ContractInfo.EndTime = TenantContractInfo.EndTime
+        const StartTime = dateFormat(TenantContractInfo.StartTime, 'yyyy-MM-dd 00:00:00')
+        const EndTime = dateFormat(TenantContractInfo.EndTime, 'yyyy-MM-dd 00:00:00')
         ContractStateModel.ContractInfo = {
           ...ContractStateModel.ContractInfo,
           TenantName: TenantContractInfo.TenantName || "",
           TenantPhone: TenantContractInfo.TenantPhone || "",
+          TenantCard: TenantContractInfo.TenantCard || "",
           HouseRent: TenantContractInfo.HouseRent || 0,
           HouseDeposit: TenantContractInfo.HouseDeposit || 0,
+          EntranceType: TenantContractInfo.EntranceType || 0,
+          EntranceID: TenantContractInfo.EntranceID || 0,
+          OrderMoneyNumber: TenantContractInfo.OrderMoneyNumber || '',
+          PayModel: TenantContractInfo.PayModel || 3,
+          OrderMoney: TenantContractInfo.OrderMoney || 0
+        }
+        debugger
+        if (ContractStateModel.ContractInfo.EntranceType === 1) {
+          this.setState({
+            EntranceIDList: [
+              {
+                label: '请选择',
+                value: 0
+              },
+              {
+                label: ContractStateModel.ContractInfo.OrderMoneyNumber,
+                value: ContractStateModel.ContractInfo.EntranceID,
+                price: ContractStateModel.ContractInfo.OrderMoney
+              }
+            ]
+          })
+        }
+        if (StartTime) {
+          ContractStateModel.ContractInfo.StartTime = StartTime
+          ContractStateModel.ContractInfo.EndTime = EndTime
+          ContractStateModel.ContractInfo.HostTimeMark = [dateFormat(StartTime), dateFormat(EndTime)]
         }
       } else {
+        if (TenantContractInfo.CardIDFront && TenantContractInfo.CardIDFront.length > 0) {
+          this.cloneData.CardIDFront = deepCopy(TenantContractInfo.CardIDFront)
+        }
+        if (TenantContractInfo.CardIDBack && TenantContractInfo.CardIDBack.length > 0) {
+          this.cloneData.CardIDBack = deepCopy(TenantContractInfo.CardIDBack)
+        }
+        if (TenantContractInfo.AgentCardIDFront && TenantContractInfo.AgentCardIDFront.length > 0) {
+          this.cloneData.AgentCardIDFront = deepCopy(TenantContractInfo.AgentCardIDFront)
+        }
+        if (TenantContractInfo.AgentCardIDBack && TenantContractInfo.AgentCardIDBack.length > 0) {
+          this.cloneData.AgentCardIDBack = deepCopy(TenantContractInfo.AgentCardIDBack)
+        }
         ContractStateModel.ContractInfo = {
           ...this.state.ContractInfo, ...TenantContractInfo
         }
         // 合同编号重置
         if (this.editType === 2) {
           ContractStateModel.ContractInfo.ContractNumber = ''
+          ContractStateModel.ContractInfo.HouseNumberMark = ''
+          ContractStateModel.ContractInfo.OrderMoneyNumber = ''
+          ContractStateModel.ContractInfo.EntranceID = 0
         }
         if (!ContractStateModel.PayDays) {
-          ContractStateModel.PayDays = 15
+          ContractStateModel.PayDays = 30
         }
         // 代理人信息
         ContractStateModel.ContractInfo.IsAgentMark = ContractStateModel.ContractInfo.IsAgent === 1
         // 是否分期
         ContractStateModel.ContractInfo.IsPayStageMark = ContractStateModel.ContractInfo.IsPayStage === 1
+        // 是否代缴水电费
+        ContractStateModel.ContractInfo.IsSubstituteMark = ContractStateModel.ContractInfo.IsSubstitute === 1
         // 托管时间和分期时间
         ContractStateModel.ContractInfo.StartTime = dateFormat(ContractStateModel.ContractInfo.StartTime, 'yyyy-MM-dd 00:00:00')
         ContractStateModel.ContractInfo.EndTime = dateFormat(ContractStateModel.ContractInfo.EndTime, 'yyyy-MM-dd 00:00:00')
-        ContractStateModel.ContractInfo.PayStageStartTime = dateFormat(ContractStateModel.ContractInfo.PayStageStartTime, 'yyyy-MM-dd 00:00:00')
-        ContractStateModel.ContractInfo.PayStageEndTime = dateFormat(ContractStateModel.ContractInfo.PayStageEndTime, 'yyyy-MM-dd 00:00:00')
         if (this.editType === 2) {
           ContractStateModel.ContractInfo.HostTimeMark = [dateFormat(ContractStateModel.ContractInfo.EndTime), '']
-          if (ContractStateModel.ContractInfo.IsPayStageMark) {
-            ContractStateModel.ContractInfo.PayStageTimeMark = [dateFormat(ContractStateModel.ContractInfo.PayStageEndTime), '']
-          }
         } else {
           // 暂存可能没有时间
           if (!ContractStateModel.ContractInfo.StartTime && !ContractStateModel.ContractInfo.EndTime) {
             ContractStateModel.ContractInfo.HostTimeMark = []
           } else {
             ContractStateModel.ContractInfo.HostTimeMark = [dateFormat(ContractStateModel.ContractInfo.StartTime), dateFormat(ContractStateModel.ContractInfo.EndTime)]
-          }
-          if (ContractStateModel.ContractInfo.IsPayStageMark) {
-            if (!ContractStateModel.ContractInfo.PayStageStartTime && !ContractStateModel.ContractInfo.PayStageEndTime) {
-              ContractStateModel.ContractInfo.PayStageTimeMark = []
-            } else {
-              ContractStateModel.ContractInfo.PayStageTimeMark = [dateFormat(ContractStateModel.ContractInfo.PayStageStartTime), dateFormat(ContractStateModel.ContractInfo.PayStageEndTime)]
-            }
           }
         }
         // 租金包含费用
@@ -976,7 +1226,9 @@ class TenantContract extends React.Component {
       }
     }
     if (LivePeopleInfoList && LivePeopleInfoList.length > 0) {
-      this.cloneData.LivePeopleInfoList = deepCopy(LivePeopleInfoList)
+      if (this.editType !== 2) {
+        this.cloneData.LivePeopleInfoList = deepCopy(LivePeopleInfoList)
+      }
       // 排序将承租人放在第一个
       LivePeopleInfoList.sort((a, b) => b.IsTenant - a.IsTenant)
       ContractStateModel.LivePeopleInfoList = LivePeopleInfoList
@@ -985,7 +1237,9 @@ class TenantContract extends React.Component {
     }
     if (OutRoominfoList && OutRoominfoList.length > 0) {
       ContractStateModel.OutRoomInfoList = OutRoominfoList
-      this.cloneData.OutRoomInfoList = deepCopy(OutRoominfoList)
+      if (this.editType !== 2) {
+        this.cloneData.OutRoomInfoList = deepCopy(OutRoominfoList)
+      }
     }
     if (TenDecoration && TenDecoration.length > 0) {
       Decoration.forEach((item, index) => {
@@ -1024,6 +1278,20 @@ class TenantContract extends React.Component {
       if (step === 2) {
         this.resetBillForm()
       }
+      if (step === 3) {
+        let str = ''
+        if (this.state.ContractInfo.EntranceID>0 || this.editType === 2) {
+          str += `该合同为【${this.editType === 2 ? '续约' : '预定'}】合同\n`
+          str += `您可能需要在第一期中添加一个明细\n`
+          str += `【支出-租客-${this.editType === 2 ? '续约转押金' : '定金转租金'}】`
+          Alert.alert('温馨提示', str, [
+            {
+              text: '我知道了', onPress: () => {
+              }
+            }
+          ], {cancelable: false})
+        }
+      }
     }, 0)
   }
 
@@ -1036,25 +1304,38 @@ class TenantContract extends React.Component {
         // this.refSteps.nextStep()
         if (validationResults0.isValid) {
           if (!this.validateForm0(values0)) return
-          if (this.state.LivePeopleInfoList.some(v => {
-            return !v.LiverName || !v.LiverPhone || !v.CardID
-          })) {
-            Toast.show('请填写完成入住人相关信息！', {
-              duration: Toast.durations.SHORT,
-              position: Toast.positions.BOTTOM
-            })
-            return
-          }
-          if (this.state.LivePeopleInfoList.some(v => {
-            return !validatePhoneNumber(v.LiverPhone)
-          })) {
-            Toast.show('入住人电话格式不正确！', {
-              duration: Toast.durations.SHORT,
-              position: Toast.positions.BOTTOM
-            })
-            return
-          }
           this.state.ContractInfo = {...this.state.ContractInfo, ...values0}
+          try {
+            this.state.LivePeopleInfoList.forEach((v,i)=>{
+              if (!v.LiverName) {
+                throw new Error(`请填写入住人${i + 1}姓名！`)
+              }
+              if (!validatePhoneNumber(v.LiverPhone)) {
+                throw new Error(`入住人${i + 1}电话号码格式不正确！`)
+              }
+              if (this.state.ContractInfo.PaperType === 0 && !validateCard(v.CardID)) {
+                throw new Error(`入住人${i + 1}身份证格式不正确！`)
+              }
+            })
+            if (this.state.ContractInfo.PaperType === 0 && this.state.ContractInfo.CardIDFront.length === 0) {
+              throw new Error('请上传租客身份证头像面！')
+            }
+            if (this.state.ContractInfo.PaperType === 0 && this.state.ContractInfo.CardIDBack.length === 0) {
+              throw new Error('请上传租客身份证国徽面！')
+            }
+            if (this.state.ContractInfo.IsAgentMark && this.state.ContractInfo.PaperType === 0 && this.state.ContractInfo.AgentCardIDFront.length === 0) {
+              throw new Error('请上传代办人身份证头像面！')
+            }
+            if (this.state.ContractInfo.IsAgentMark && this.state.ContractInfo.PaperType === 0 && this.state.ContractInfo.AgentCardIDBack.length === 0) {
+              throw new Error('请上传代办人身份证国徽面！')
+            }
+          }catch (e) {
+            Toast.show(e.message, {
+              duration: Toast.durations.SHORT,
+              position: Toast.positions.BOTTOM
+            })
+            return
+          }
           this.refSteps.nextStep()
         } else {
           const errors = GiftedFormManager.getValidationErrors(validationResults0)
@@ -1082,7 +1363,21 @@ class TenantContract extends React.Component {
         break
       case 2:
         this.refBillPanel.validate().then(() => {
-          this.refSteps.nextStep()
+          const text = this.refBillPanel.validateHoliday()
+          if(text) {
+            Alert.alert('温馨提示', text, [
+              {
+                text: '返回修改'
+              },
+              {
+                text: '下一步', onPress: () => {
+                  this.refSteps.nextStep()
+                }
+              }
+            ])
+          }else {
+            this.refSteps.nextStep()
+          }
         })
     }
   }
@@ -1090,10 +1385,43 @@ class TenantContract extends React.Component {
     this.refSteps.prevStep()
   }
 
+  fastChangeTime(num) {
+    const form1 = GiftedFormManager.getValues('EditTenantContractRuleForm1')
+    form1.HostTimeMark = form1.HostTimeMark || []
+    let start = form1.HostTimeMark[0]
+    let startTime = 0, arr = form1.HostTimeMark.slice()
+    if (start) {
+      startTime = new Date(start)
+    } else {
+      startTime = new Date()
+      arr[0] = dateFormat(startTime)
+    }
+    startTime.addMonths(num * 6)
+    startTime.setDate(startTime.getDate() - 1)
+    arr[1] = dateFormat(startTime)
+    this.state.ContractInfo.HostTimeMark = arr
+    // this.calcDiscountPolicy(this.state.ContractInfo.HostTimeMark, this.state.ContractInfo.PayModel, this.state.ContractInfo.HouseRent)
+    this.setState({
+      ContractInfo: this.state.ContractInfo
+    })
+    let msg = ''
+    if (num === 1) {
+      msg = '半'
+    } else {
+      msg = num / 2
+    }
+    Toast.show(`已切换租期时间为${msg}年`, {
+      duration: Toast.durations.SHORT,
+      position: Toast.positions.BOTTOM
+    })
+  }
+
   calcPrice(val) {
     if (!val) {
       return
     }
+    // this.state.ContractInfo.HouseRent = val
+    // this.calcDiscountPolicy(this.state.ContractInfo.HostTimeMark, this.state.ContractInfo.PayModel, this.state.ContractInfo.HouseRent,1)
     StateTenContract({
       HouseID: this.state.HouseInfo.KeyID,
       OuteRoom: val
@@ -1118,6 +1446,12 @@ class TenantContract extends React.Component {
       ContractInfo: {...this.state.ContractInfo, IsPayStageMark: val}
     })
   }
+  
+  substituteChange(val) {
+    this.setState({
+      ContractInfo: {...this.state.ContractInfo, IsSubstituteMark: val}
+    })
+  }
 
   contractInfoChange(val, type) {
     this.setState({
@@ -1125,10 +1459,104 @@ class TenantContract extends React.Component {
     })
   }
 
-  onUploadFileChange(data) {
-    this.setState({
-      ImageUpload: data
-    })
+  HostTimeMarkChange(val) {
+    // debugger
+    // this.state.ContractInfo.HostTimeMark = val
+    // this.calcDiscountPolicy(this.state.ContractInfo.HostTimeMark, this.state.ContractInfo.PayModel, this.state.ContractInfo.HouseRent)
+  }
+
+  PayModelChange(val) {
+    // debugger
+    // this.state.ContractInfo.PayModel = val
+    // this.calcDiscountPolicy(this.state.ContractInfo.HostTimeMark, this.state.ContractInfo.PayModel, this.state.ContractInfo.HouseRent)
+  }
+
+  hasDiscountPolicy(timeArr, PayModel, HouseRent) {
+    if (timeArr[0] && timeArr[1]) {
+      // 租期大于等于1年
+      const flag = this.moreThan12Month(timeArr)
+      if (flag) {
+        // 半年付和年付
+        if (PayModel === 6 || PayModel === 12) {
+          if (HouseRent > 0) {
+            return true
+          }
+        }
+      }
+    }
+    return false
+  }
+
+  calcDiscountPolicy(timeArr, PayModel, HouseRent, type=0) {
+    // debugger
+    // if (type === 1) {
+    //   this.calcDiscountPolicyFn(timeArr, PayModel, HouseRent)
+    // } else {
+    //   setTimeout(()=>{
+    //     this.calcDiscountPolicyFn(timeArr, PayModel, HouseRent)
+    //   },500)
+    // }
+  }
+
+  calcDiscountPolicyFn(timeArr, PayModel, HouseRent) {
+    if (this.hasDiscountPolicy(timeArr, PayModel, HouseRent)) {
+      let DiscountPolicy = ''
+      if (PayModel === 6) {
+        DiscountPolicy = `因客户${PayModel}个月付款，优惠金额${HouseRent / 2}元，如客户中途违约，优惠金额${HouseRent / 2}元取消。`
+      } else {
+        DiscountPolicy = `因客户${PayModel}个月付款，优惠金额${HouseRent}元，如客户中途违约，优惠金额${HouseRent}元取消。`
+      }
+      this.state.ContractInfo.DiscountPolicy = DiscountPolicy
+      Alert.alert('温馨提示', '系统检测到该条件下符合优惠政策，已自动为您添加优惠政策', [
+        {text: '确认', onPress: () => {
+          this.setState({
+            ContractInfo: { ...this.state.ContractInfo}
+          })
+        }}
+      ], {cancelable: false})
+    }
+  }
+
+  moreThan12Month(timeArr) {
+    const time1 = new Date(timeArr[0])
+    const time2 = new Date(timeArr[1])
+    time2.setDate(time2.getDate() + 1)
+    time1.setMonth(time1.getMonth() + 12)
+    if (dateFormat(time1, 'yyyy-MM-dd') <= dateFormat(time2, 'yyyy-MM-dd')) {
+      return true
+    } else {
+      return false
+    }
+  }
+
+  onUploadFileChange(data,type = 0) {
+    switch (type) {
+      case 0:
+        this.setState({
+          ImageUpload: data
+        })
+        break
+      case 1:
+        this.setState({
+          ContractInfo: {...this.state.ContractInfo,CardIDFront: data}
+        })
+        break
+      case 2:
+        this.setState({
+          ContractInfo: {...this.state.ContractInfo,CardIDBack: data}
+        })
+        break
+      case 3:
+        this.setState({
+          ContractInfo: {...this.state.ContractInfo,AgentCardIDFront: data}
+        })
+        break
+      case 4:
+        this.setState({
+          ContractInfo: {...this.state.ContractInfo,AgentCardIDBack: data}
+        })
+        break
+    }
   }
 
   showSelectHouseFn() {
@@ -1215,7 +1643,7 @@ class TenantContract extends React.Component {
     })
   }
 
-  selectHouse(item, model) {
+  selectHouse(item, model,type = 0) {
     if (this.state.HouseInfo.KeyID && +this.state.HouseInfo.KeyID === +item.KeyID) return
     this.state.HouseInfo = item
     if (item.HouseID) {
@@ -1241,6 +1669,7 @@ class TenantContract extends React.Component {
       // 查询房源的合同状态
       this.searchHouseStatus()
       this.searchHouseConfig()
+      this.searchHouseOrder(type)
     })
   }
 
@@ -1302,6 +1731,33 @@ class TenantContract extends React.Component {
     })
   }
 
+  searchHouseOrder(type) {
+    if (this.query.OrderID) return
+    return QueryOrderByHouseID({
+      HouseID: this.state.HouseInfo.KeyID
+    }).then(({ Data }) => {
+      const EntranceIDList = Data.map(x => {
+        return {
+          label: x.OrderMoneyNumber,
+          value: x.KeyID,
+          price: x.OrderMoney
+        }
+      })
+      EntranceIDList.unshift({
+        label: '请选择',
+        value: 0
+      })
+      this.setState({
+        EntranceIDList
+      })
+      if (type !== 1) {
+        this.setState({
+          ContractInfo: {...this.state.ContractInfo,EntranceID: 0}
+        })
+      }
+    })
+  }
+
   handleBack() {
     Alert.alert('温馨提示', '表单还未保存，确定要退出吗？', [
       {
@@ -1312,13 +1768,14 @@ class TenantContract extends React.Component {
     ], {cancelable: false})
   }
 
-  handleLiveInAdd(IsTenant = 0,item = {}) {
+  handleLiveInAdd(IsTenant = 0, item = {}) {
     this.state.LivePeopleInfoList.push({
       LiverName: item.TenantName || '',
       LiverPhone: item.TenantPhone || '',
       LiverSex: item.TenantSex || 0,
       CardType: 1, // 默认身份证1
       CardID: item.TenantCard || '',
+      Relationship: 0,
       IsTenant
     })
     this.setState({
@@ -1369,16 +1826,11 @@ class TenantContract extends React.Component {
       'HouseDeposit',
       'DepositModel',
       'PayModel',
+      'ManagerFee',
       'PayTimeType',
-      'PayDays',
-      'IsPayStageMark',
-      'TenantStageType',
-      'PayStageStartTime',
-      'PayStageEndTime',
-      'IncreaseType',
-      'IncreaseFrequency',
-      'IncreaseNum',
-      'IncreaseMoney'
+      'EntranceID',
+      'DiscountPolicy',
+      'PayDays'
     ]
     keys.map(v => {
       this.billForm[v] = this.state.ContractInfo[v]
@@ -1386,15 +1838,7 @@ class TenantContract extends React.Component {
   }
 
   resetBillForm() {
-    if (this.state.ContractInfo.TenantStageType === 0) {
-      this.state.ContractInfo.TenantStageType = 1
-    }
-    if (this.state.ContractInfo.IncreaseFrequency === 0) {
-      this.state.ContractInfo.IncreaseFrequency = 1
-    }
-    this.setState({
-      ContractInfo: this.state.ContractInfo
-    })
+    // nothing
   }
 
   buildBillData(values) {
@@ -1407,30 +1851,26 @@ class TenantContract extends React.Component {
     const model = this.state.ContractInfo
     model.StartTime = dateFormat(model.HostTimeMark[0], 'yyyy-MM-dd 00:00:00')
     model.EndTime = dateFormat(model.HostTimeMark[1], 'yyyy-MM-dd 00:00:00')
-    // 递增方式为不递增 不规则递增时 不能有 递增次数 递增年 递增值
-    if (model.IncreaseType < 2) {
-      model.IncreaseFrequency = 0
-      model.IncreaseNum = ''
-      model.IncreaseMoney = ''
-    }
-    if (model.IsPayStageMark) {
-      model.PayStageStartTime = dateFormat(model.PayStageTimeMark[0], 'yyyy-MM-dd 00:00:00')
-      model.PayStageEndTime = dateFormat(model.PayStageTimeMark[1], 'yyyy-MM-dd 00:00:00')
-    } else {
-      model.PayStageStartTime = '2001-01-01 00:00:00'
-      model.PayStageEndTime = '2001-01-01 00:00:00'
-      model.TenantStageType = 0
-    }
     // 是否分期
     model.IsPayStage = model.IsPayStageMark ? 1 : 0
+    // 是否分期
+    model.IsSubstitute = model.IsSubstituteMark ? 1 : 0
+    // 预订单编号 绑定
+    debugger
+    if (model.EntranceID) {
+      model.EntranceType = 1
+      const EntranceIDListItem = this.state.EntranceIDList.find(x => x.value === model.EntranceID)
+      model.OrderMoneyNumber = EntranceIDListItem.label
+      model.OrderMoney = EntranceIDListItem.price
+    } else {
+      model.EntranceType = 0
+      model.OrderMoneyNumber = ''
+      model.OrderMoney = 0
+    }
   }
 
   createBill(values) {
     this.buildBillData(values)
-    if (!this.isLoadBookKeep) {
-      this.refBillPanel.initBookData(this.BookKeep)
-      this.isLoadBookKeep = true
-    }
     if (Object.keys(this.billForm).length === 0 || this.BillList.length === 0) {
       // 新增、续签、没有账单的时候
       this.getBillList()
@@ -1454,22 +1894,70 @@ class TenantContract extends React.Component {
       billLoading: true
     })
     getTenantBill(this.state.ContractInfo).then(({Data, BusCode, Msg}) => {
-      if (BusCode === 0) {
-        this.BillList = Data
-        this.refBillPanel.initBillData(Data)
-        this.saveBillForm()
-        this.refSteps.nextStep()
-      } else {
-        Toast.show(Msg || '参数错误', {
-          duration: Toast.durations.SHORT,
-          position: Toast.positions.BOTTOM
-        })
-      }
-    }).finally(() => {
+      this.setState({
+        billLoading: false
+      },()=>{
+        setTimeout(()=>{
+          if (BusCode === 0) {
+            this.filterBillData(Data)
+            this.BillList = Data
+            this.refBillPanel.initBillData(Data, this.cloneData.TenantBill)
+            this.saveBillForm()
+            this.refSteps.nextStep()
+          } else {
+            Toast.show(Msg || '参数错误', {
+              duration: Toast.durations.SHORT,
+              position: Toast.positions.BOTTOM
+            })
+          }
+        },100)
+      })
+    }).catch(() => {
       this.setState({
         billLoading: false
       })
     })
+  }
+
+  filterBillData(Data) {
+    const obj = {
+      BillProjectID: 0,
+      BillProjectName: '',
+      InOrOut: 2,
+      Amount: '',
+      showWhenZero: true,
+      IsActual: 0,
+      CanOperate: 1
+    }
+    if (this.state.ContractInfo.EntranceID>0) {
+      const cloneObj = { ...obj }
+      cloneObj.Amount = this.state.ContractInfo.OrderMoney
+      cloneObj.CanOperate = 0
+      cloneObj.BillProjectID = 57
+      cloneObj.BillProjectName = '定金转租金'
+      // 判断之前是否已经有这个项目
+      if (Data[0].TenantBillDetail.findIndex(x => x.BillProjectID === 57) === -1) {
+        Data[0].TenantBillDetail.push(cloneObj)
+      }
+    }
+    // if (this.hasDiscountPolicy(this.state.ContractInfo.HostTimeMark, this.state.ContractInfo.PayModel, this.state.ContractInfo.HouseRent)) {
+    //   const Amount = this.state.ContractInfo.PayModel === 6 ? (this.state.ContractInfo.HouseRent / 2) : this.state.ContractInfo.HouseRent
+    //   if (this.state.ContractInfo.DiscountPolicy.indexOf(`优惠金额${Amount}`) > 0) {
+    //     const cloneObj = { ...obj }
+    //     cloneObj.Amount = Amount
+    //     cloneObj.CanOperate = 0
+    //     cloneObj.BillProjectID = 88
+    //     cloneObj.BillProjectName = '租金优惠'
+    //     if (Data[0].TenantBillDetail.findIndex(x => x.BillProjectID === 88) === -1) {
+    //       Data[0].TenantBillDetail.push(cloneObj)
+    //     }
+    //   }
+    // }
+    if (this.editType === 2) {
+      obj.BillProjectID = 58
+      obj.BillProjectName = '续约转押金'
+      Data[0].TenantBillDetail.push(obj)
+    }
   }
 
   createOrder(type) {
@@ -1515,10 +2003,20 @@ class TenantContract extends React.Component {
         break
       case 3:
         // 获取第四步的信息
+        debugger
+        const validationResults3 = GiftedFormManager.validate('EditTenantContractRuleForm3')
         const values3 = GiftedFormManager.getValues('EditTenantContractRuleForm3')
-        if (!this.validateForm3(values3)) return
-        this.state.ContractInfo = {...this.state.ContractInfo, ...values3}
-        this.asyncCreateOrder(type)
+        if (validationResults3.isValid || type === 'TemporaryStorage') {
+          if (!this.validateForm3(values3)) return
+          this.state.ContractInfo = {...this.state.ContractInfo, ...values3}
+          this.asyncCreateOrder(type)
+        } else {
+          const errors3 = GiftedFormManager.getValidationErrors(validationResults3)
+          Toast.show(errors3[0], {
+            duration: Toast.durations.SHORT,
+            position: Toast.positions.BOTTOM
+          })
+        }
     }
   }
 
@@ -1531,6 +2029,7 @@ class TenantContract extends React.Component {
     const LivePeopleInfoList = DiffArrFn(this.cloneData.LivePeopleInfoList, this.state.LivePeopleInfoList, [
       'LiverName',
       'LiverPhone',
+      'Relationship',
       'LiverSex',
       'CardID',
       'EmergencyContactName',
@@ -1541,11 +2040,14 @@ class TenantContract extends React.Component {
       'ImageLocation'
     ])
     // 租金包含费用
+    let RentIncludeExp = 0
+    this.state.RentIncludeCost.forEach(x=>{
+      RentIncludeExp += +x.Price
+    })
+    this.state.ContractInfo.RentIncludeExp = RentIncludeExp
     this.state.ContractInfo.RentIncludeCost = JSON.stringify(this.state.RentIncludeCost)
     // 出房人
     const OutRoominfoList = DiffArrFn(this.cloneData.OutRoomInfoList, this.state.OutRoomInfoList)
-    let BookKeep = this.refBillPanel.getBookValue()
-    BookKeep = DiffArrFn(this.cloneData.BookKeep, BookKeep)
     const TenantBill = this.refBillPanel.getBillValue()
     // 装修清单兼容
     const TenDecoration = []
@@ -1569,6 +2071,24 @@ class TenantContract extends React.Component {
     this.state.ContractInfo.InputTerminal = 0
     // 修改身份为大写
     this.state.ContractInfo.TenantCard = this.state.ContractInfo.TenantCard.toUpperCase()
+    // 身份证照片
+    const CardIDFront = DiffArrFn(this.cloneData.CardIDFront, this.state.ContractInfo.CardIDFront, [
+      'ImageLocation'
+    ])
+    const CardIDBack = DiffArrFn(this.cloneData.CardIDBack, this.state.ContractInfo.CardIDBack, [
+      'ImageLocation'
+    ])
+    this.state.ContractInfo.CardIDFront = CardIDFront
+    this.state.ContractInfo.CardIDBack = CardIDBack
+    // 代办人身份证照片
+    const AgentCardIDFront = DiffArrFn(this.cloneData.AgentCardIDFront, this.state.ContractInfo.AgentCardIDFront, [
+      'ImageLocation'
+    ])
+    const AgentCardIDBack = DiffArrFn(this.cloneData.AgentCardIDBack, this.state.ContractInfo.AgentCardIDBack, [
+      'ImageLocation'
+    ])
+    this.state.ContractInfo.AgentCardIDFront = AgentCardIDFront
+    this.state.ContractInfo.AgentCardIDBack = AgentCardIDBack
     // 续约加字段
     if (this.editType === 2) {
       this.state.ContractInfo.RenewalID = this.query.KeyID
@@ -1581,7 +2101,7 @@ class TenantContract extends React.Component {
         HouseEquipment: [],
         LivePeopleInfoList,
         ImageUpload,
-        BookKeep,
+        BookKeep: this.BookKeep,
         OutRoominfoList,
         TenDecoration,
         TenantConTractQuipment
@@ -1598,11 +2118,15 @@ class TenantContract extends React.Component {
     if (type === 'Preview') {
       // 手机端没有预览
     } else {
-      fn(param).then(({Data}) => {
+      fn(param).then(({Data, BusCode, Msg}) => {
         this.setState({
           orderLoading: false
         }, () => {
           setTimeout(() => {
+            if (BusCode === 2) {
+              Alert.alert('温馨提示', Msg);
+              return
+            }
             const isRefresh = this.changeContractData(Data, type)
             if (type === 'Save') {
               Alert.alert('温馨提示', '保存合同成功', [
@@ -1636,6 +2160,7 @@ class TenantContract extends React.Component {
                       Mobile: this.state.ContractInfo.TenantPhone,
                       IDCard: this.state.ContractInfo.TenantCard,
                       Name: this.state.ContractInfo.TenantName,
+                      Img: this.state.ContractInfo.CardIDFront[0].ImageLocation,
                       ContractID: Data,
                       path: this.editType === 0 ? 'EditContract' : '',
                       type: 1

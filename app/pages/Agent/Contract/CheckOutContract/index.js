@@ -43,6 +43,7 @@ class AddBookKeeping extends React.Component {
       form: {
         HouseName: '',
         ReceivablesDate: '',
+        CheckOutDate: '', // 退房日期
         VoucherID: '',
         IsBreachContractMark: false,
         IsHouse: 1
@@ -95,6 +96,7 @@ class AddBookKeeping extends React.Component {
               ...this.state.form,
               ...bookKeepPara,
               ReceivablesDate: dateFormat(bookKeepPara.ReceivablesDate),
+              CheckOutDate: dateFormat(bookKeepPara.CheckOutDate),
               IsBreachContractMark: bookKeepPara.IsBreachContract !== 0
             }
             bookKeep.forEach((item, index) => {
@@ -104,6 +106,7 @@ class AddBookKeeping extends React.Component {
                   this.mapKey
               ).pathArr
               item.BillProjectIDMark = pathArr
+              item.IsEntireHouse = 1 // 业主退房默认整套
             })
             this.setState({
               form: this.state.form,
@@ -224,6 +227,7 @@ class AddBookKeeping extends React.Component {
       BillProjectName: '',
       Amount: '',
       InOrOut: '',
+      IsEntireHouse: 1,
       Remark: ''
     })
     this.setState({
@@ -286,6 +290,11 @@ class AddBookKeeping extends React.Component {
                 maxLength={30}
                 required={false}
                 value={form.VoucherID}
+            />
+            <GiftedForm.DatePickerWidget
+                name='CheckOutDate'
+                title='退房日期'
+                value={form.CheckOutDate}
             />
 
             <GiftedForm.NoticeWidget title={`项目信息`} rightView={

@@ -8,6 +8,7 @@ const style = StyleSheet.create({
   btn_box: {
     ...DisplayStyle('row', 'flex-start', 'flex-start'),
     paddingHorizontal: 15,
+    paddingBottom: 20,
     flexWrap: 'wrap'
   },
   btn_box_item: {

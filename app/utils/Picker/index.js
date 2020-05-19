@@ -254,6 +254,35 @@ const cascaderInit = config => {
     }
   })
 }
+const regionCityInit = config => {
+  let selectVal = null
+  let selectIdx = null
+  Picker.init({
+    ...defaultConfig,
+    pickerTitleText: '请选择',
+    ...config,
+    onPickerConfirm: (val, idx) => {
+      if(Platform.OS === 'ios'){
+        config.onPickerConfirm && config.onPickerConfirm(val, idx)
+      }else{
+        config.onPickerConfirmCloseModal && config.onPickerConfirmCloseModal()
+        setTimeout(() => {
+          if (selectVal === null) {
+            selectVal = val
+            selectIdx = idx
+          }
+          config.onPickerConfirm && config.onPickerConfirm(selectVal, selectIdx)
+        }, 300)
+      }
+    },
+    onPickerSelect: (val, idx) => {
+      selectVal = val
+      selectIdx = idx
+      config.onPickerCancel && config.onPickerSelect(val, idx)
+    }
+  })
+}
+
 
 const hidePicker = Picker.hide
 const showPicker = Picker.show
@@ -265,5 +294,6 @@ export {
   hidePicker,
   showPicker,
   cascaderInit,
-  dateYearMonthInit
+  dateYearMonthInit,
+  regionCityInit
 }

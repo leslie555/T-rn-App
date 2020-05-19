@@ -87,8 +87,8 @@ module.exports = {
       typeof nextProps.value !== 'undefined' &&
       nextProps.value !== this.props.value
     ) {
-      this._onChange(nextProps.value,false)
-    }else if(nextProps.forceChange){
+      this._onChange(nextProps.value, false)
+    } else if (nextProps.forceChange) {
       this._setValue(nextProps.value)
     }
   },

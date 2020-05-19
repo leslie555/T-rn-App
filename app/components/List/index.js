@@ -10,6 +10,7 @@ import {
 } from '../../components'
 import { connect } from 'react-redux'
 import { setList } from '../../redux/actions/list'
+// 解决ios 卡顿  
 const delay = () => {
   return new Promise(resolve => {
     setTimeout(
@@ -29,13 +30,16 @@ class List extends React.Component {
       isError: false
     }
     this.data = {
-      loadingType: 'dot' // loading类型 enum: ['dot','refresh']
+      loadingType: 'dot', // loading类型 enum: ['dot','refresh']
+      isRefreshing: false // 正在请求刷新数据
     }
   }
 
   static defaultProps = {
     pageKey: 'parm',
-    primaryKey: 'KeyID'
+    primaryKey: 'KeyID',
+    requestFirst: true,
+    hasSameKeyID: false
   }
 
   static propTypes = {
@@ -44,20 +48,36 @@ class List extends React.Component {
     setForm: PropTypes.func.isRequired,
     renderItem: PropTypes.func.isRequired,
     listKey: PropTypes.string.isRequired, // redux中该页面列表的key
+    requestFirst: PropTypes.bool, // 首次进入是否调接口
     onEndReached: PropTypes.func,
     onRefresh: PropTypes.func,
     pageKey: PropTypes.string,
-    primaryKey: PropTypes.string
+    primaryKey: PropTypes.string,
+    hasSameKeyID: PropTypes.bool,
   }
   componentDidMount() {
-    this.fetchList(this.props.form, true)
+    if (this.props.requestFirst) {
+      this.fetchList(this.props.form, true)
+    }
   }
   componentWillReceiveProps(nextProps) {
     if (this.props.form !== nextProps.form) {
-      this.fetchList(nextProps.form)
+      if (nextProps.form.__loadingTypeFlag__) {
+        this.data.loadingType = nextProps.form.__loadingTypeFlag__
+      } else {
+        this.data.loadingType = 'dot'
+      }
+      this.mark = new Date().getTime()
+      this.fetchList(
+        nextProps.form,
+        false,
+        this.mark,
+        nextProps.form.__loadingTypeFlag__
+      )
+      delete nextProps.form.__loadingTypeFlag__
     }
   }
-  fetchList = async (form, isFirstInit) => {
+  fetchList = async (form, isFirstInit, mark, flag) => {
     this.setState({
       isLoading: true
     })
@@ -69,14 +89,35 @@ class List extends React.Component {
       } else {
         res = await this.props.request(form)
       }
-      const isAllShow = res.Data.rows.length < res.Data.Param.size
+      if (flag === 'refresh') {
+        this.data.isRefreshing = false
+      }
+      if (this.mark !== mark) {
+        return
+      }
+      const size = res.Data.Param.size
+      const isAllShow = res.Data.rows.length < size
       let list
       if (res.Data.Param.page === 1) {
         list = res.Data.rows || []
       } else {
-        list = this.props.allList[this.props.listKey].concat(
-          ...(res.Data.rows || [])
-        )
+        // 下拉加载
+        let rows = res.Data.rows
+        const lastRows = this.props.allList[this.props.listKey].slice(-size)
+        if (size && lastRows[0][this.props.primaryKey] != undefined) {
+          const lastRowsPrimaryKeys = lastRows.map(
+            v => v[this.props.primaryKey]
+          )
+          rows = rows.filter(
+            val => !lastRowsPrimaryKeys.includes(val[this.props.primaryKey])
+          )
+        }
+        list = this.props.allList[this.props.listKey].concat(...(rows || []))
+      }
+      if (this.props.hasSameKeyID) {
+        list.forEach(x => {
+          delete x.KeyID
+        })
       }
       this.props.dispatch(
         setList({
@@ -84,16 +125,11 @@ class List extends React.Component {
           data: list
         })
       )
-      this.setState(
-        {
-          isAllShow,
-          isLoading: false,
-          isError: false
-        },
-        () => {
-          this.data.loadingType = 'dot'
-        }
-      )
+      this.setState({
+        isAllShow,
+        isLoading: false,
+        isError: false
+      })
     } catch (err) {
       this.setState({
         isLoading: false,
@@ -103,17 +139,19 @@ class List extends React.Component {
   }
 
   onEndReached = () => {
-    this.data.loadingType = null
-    if (this.state.isLoading || this.state.isAllShow) return
+    if (this.state.isLoading || this.state.isAllShow || this.data.isRefreshing)
+      return
     const form = { ...this.props.form }
     form[this.props.pageKey].page += 1
+    form['__loadingTypeFlag__'] = 'onEnd'
     this.props.setForm(form)
     this.props.onEndReached && this.props.onEndReached()
   }
   onRefresh = () => {
-    this.data.loadingType = 'refresh'
+    this.data.isRefreshing = true
     const form = { ...this.props.form }
     form[this.props.pageKey].page = 1
+    form['__loadingTypeFlag__'] = 'refresh'
     this.props.setForm(form)
     this.props.onRefresh && this.props.onRefresh()
   }
@@ -137,17 +175,25 @@ class List extends React.Component {
           contentContainerStyle={{}}
           data={this.props.allList[this.props.listKey]}
           renderItem={this.props.renderItem}
-          keyboardShouldPersistTaps='always'
+          keyboardShouldPersistTaps="always"
           ListEmptyComponent={<EmptyList text={'暂无内容'} />}
-          keyExtractor={item => item[this.props.primaryKey] + ''}
+          keyExtractor={(item, index) =>
+            item[this.props.primaryKey] != undefined
+              ? item[this.props.primaryKey] + ''
+              : index + ''
+          }
+          // 上拉刷新
           onEndReached={this.onEndReached}
           onEndReachedThreshold={0.1}
           ListFooterComponent={
-            <ListFooterComponent
-              list={this.props.allList[this.props.listKey]}
-              isAll={this.state.isAllShow}
-            />
+            !this.data.isRefreshing && (
+              <ListFooterComponent
+                list={this.props.allList[this.props.listKey]}
+                isAll={this.state.isAllShow}
+              />
+            )
           }
+          // 下拉刷新
           refreshControl={
             <RefreshControl
               refreshing={
@@ -155,8 +201,8 @@ class List extends React.Component {
               }
               onRefresh={this.onRefresh}
               colors={['#389ef2']}
-              tintColor='#389ef2'
-              title='加载中...'
+              tintColor="#389ef2"
+              title="加载中..."
             />
           }
         />

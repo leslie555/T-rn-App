@@ -6,6 +6,7 @@ import {getTreeNodeByValue} from "../../../../../../utils/arrUtil";
 import {ToChinesNum} from "../../../../../../utils/stringFormat";
 import {priceFormat} from "../../../../../../utils/priceFormat";
 import {dateFormat} from "../../../../../../utils/dateFormat";
+import {calendar} from "../../../../../../utils/dateFormat/nongli";
 import {QueryBillItem} from '../../../../../../api/owner'
 import {Picker} from '../../../../../../components'
 import Toast from "react-native-root-toast";
@@ -22,6 +23,7 @@ export default class BillList extends React.Component {
     this.billProjectClone = []
     this.currentCItem = {}
     this.currentItem = {}
+    this.currentDateType = ''
     this.scrollRef = null
     this.state = {
       tableList: [],
@@ -30,16 +32,17 @@ export default class BillList extends React.Component {
       billProjectVisible: false,
       billProjectSelectedValue: [],
       markDateVisible: false,
-      markDateSelectedValue: []
+      markDateSelectedValue: [],
+      editType: 0
     }
   }
 
   componentWillMount() {
     this._renderItem = ({item, index}) => (
         <View style={styles.bill_item} key={index}>
-          <TouchableOpacity onPress={() => this.handleBillDelete(index)} style={styles.right_delete_box}>
+          {this.state.editType == 0&&<TouchableOpacity onPress={() => this.handleBillDelete(index)} style={styles.right_delete_box}>
             <Image source={require('../../images/del-icon.png')}/>
-          </TouchableOpacity>
+          </TouchableOpacity>}
           <View style={styles.bill_num_box}>
             <Text style={styles.bill_num}>账期{ToChinesNum(index + 1)}</Text>
           </View>
@@ -62,9 +65,11 @@ export default class BillList extends React.Component {
                           <IconFont name='sanjiaoxing' size={12} color='#999'></IconFont>
                         </TouchableOpacity>
                     }
-                    <TextInput style={styles.bill_input} defaultValue={cItem.Amount + ''}
+                    {cItem.CanOperate === 0 ?
+                        <Text style={styles.bill_text1}>{cItem.Amount}</Text> :
+                        <TextInput style={styles.bill_input} defaultValue={cItem.Amount + ''}
                                keyboardType={`phone-pad`}
-                               onChangeText={(val) => this.amountChange(cItem, val)}/>
+                               onChangeText={(val) => this.amountChange(cItem, val)}/>}
                     {cItem.CanOperate === 1 &&
                     <TouchableOpacity style={styles.bill_del_item_btn}
                                       onPress={() => this.handleBillItemDelete(item, cIndex)}>
@@ -92,10 +97,12 @@ export default class BillList extends React.Component {
                           <IconFont name='sanjiaoxing' size={12} color='#999'></IconFont>
                         </TouchableOpacity>
                     }
-                    <TextInput style={styles.bill_input} defaultValue={cItem.Amount + ''}
+                    {cItem.CanOperate === 0 ?
+                        <Text style={styles.bill_text1}>{cItem.Amount}</Text> :
+                        <TextInput style={styles.bill_input} defaultValue={cItem.Amount + ''}
                                keyboardType={`phone-pad`}
-                               onChangeText={(val) => this.amountChange(cItem, val)}/>
-                    {cItem.CanOperate === 1 &&
+                               onChangeText={(val) => this.amountChange(cItem, val)}/>}
+                    {cItem.CanOperate === 1&&
                     <TouchableOpacity style={styles.bill_del_item_btn}
                                       onPress={() => this.handleBillItemDelete(item, cIndex)}>
                       <IconFont name='guanbixuanfu' size={18} color='#999'></IconFont>
@@ -110,8 +117,26 @@ export default class BillList extends React.Component {
               <Text style={styles.bill_text1}>{priceFormat(item.BillAmount)}</Text>
             </View>
             <View style={styles.bill_content}>
+              <Text style={styles.bill_text_bold}>账单开始日期</Text>
+              {this.state.editType===1?
+              <Text style={styles.bill_text1}>{item.BillStartDate}</Text>:
+              <TouchableOpacity style={styles.bill_time} onPress={() => this.onMarkDatePress(item,'BillStartDate')}>
+                <Text style={styles.bill_time_text}>{item.BillStartDate}</Text>
+              </TouchableOpacity>
+              }
+            </View>
+            <View style={styles.bill_content}>
+              <Text style={styles.bill_text_bold}>账单结束日期</Text>
+              {this.state.editType===1?
+              <Text style={styles.bill_text1}>{item.BillEndDate}</Text>:
+              <TouchableOpacity style={styles.bill_time} onPress={() => this.onMarkDatePress(item,'BillEndDate')}>
+                <Text style={styles.bill_time_text}>{item.BillEndDate}</Text>
+              </TouchableOpacity>
+              }
+            </View>
+            <View style={styles.bill_content}>
               <Text style={styles.bill_text_bold}>应付款日</Text>
-              <TouchableOpacity style={styles.bill_time} onPress={() => this.onMarkDatePress(item)}>
+              <TouchableOpacity style={styles.bill_time} onPress={() => this.onMarkDatePress(item,'ReceivablesDate')}>
                 <Text style={styles.bill_time_text}>{item.ReceivablesDate}</Text>
               </TouchableOpacity>
             </View>
@@ -145,14 +170,15 @@ export default class BillList extends React.Component {
         <View style={styles.bill_list_content}>
           <View style={styles.bill_total}>
             <Text style={styles.head_text}>账单合计（元）：{priceFormat(this.state.total)}</Text>
-            <TouchableOpacity onPress={() => this.handleBillAdd()} style={styles.add_bill_btn_box}>
+            {this.state.editType==0&&<TouchableOpacity onPress={() => this.handleBillAdd()} style={styles.add_bill_btn_box}>
               <Text style={styles.add_bill_btn_text}>添加账期</Text>
-            </TouchableOpacity>
+            </TouchableOpacity>}
           </View>
         </View>
     )
     return (
         <View style={{flex: 1}}>
+          {headerComponent}
           <FlatList
               ref={ref => this.scrollRef = ref}
               style={styles.bill_container}
@@ -164,7 +190,6 @@ export default class BillList extends React.Component {
               extraData={this.state}
               keyExtractor={(item, index) => index + ''}
               renderItem={this._renderItem}
-              ListHeaderComponent={headerComponent}
           />
           <Picker
               visible={this.state.billProjectVisible}
@@ -194,12 +219,22 @@ export default class BillList extends React.Component {
     this.scrollRef.scrollToEnd({animated: true})
   }
 
-  initData(data) {
-    debugger
+  initData(data, PayModel = 5) {
+    this.state.editType = PayModel === 6 ? 0 : 1
+    this.setState({
+      editType: this.state.editType
+    })
     data.map((item, index) => {
       item.ReceivablesDate = dateFormat(item.ReceivablesDate)
+      item.BillStartDate = dateFormat(item.BillStartDate)
+      item.BillEndDate = dateFormat(item.BillEndDate)
       item[this.childrenKey].map((cItem, cIndex) => {
         cItem.Amount = priceFormat(cItem.Amount)
+        if (this.state.editType === 0) {
+          cItem.CanOperate = 1
+        } else if (this.state.editType === 1) {
+          // nothing
+        }
       })
     })
     // this.setState({
@@ -249,15 +284,16 @@ export default class BillList extends React.Component {
     data[0] = data[0].slice(0, -1)
     data[1] = data[1].slice(0, -1)
     data[2] = data[2].slice(0, -1)
-    this.currentItem.ReceivablesDate = data.join('-')
+    this.currentItem[this.currentDateType] = data.join('-')
     this.setState({
       tableList: this.state.tableList
     })
   }
 
-  onMarkDatePress(item) {
+  onMarkDatePress(item,type) {
     this.currentItem = item
-    const itemArr = item.ReceivablesDate.split('-')
+    this.currentDateType = type
+    const itemArr = item[type].split('-')
     itemArr[0] = +itemArr[0] + '年'
     itemArr[1] = +itemArr[1] + '月'
     itemArr[2] = +itemArr[2] + '日'
@@ -268,11 +304,14 @@ export default class BillList extends React.Component {
   }
 
   handleBillAdd() {
-    const last = this.state.tableList[this.state.tableList.length - 1]
+    let last = {}
+    if (this.state.tableList.length > 0) {
+      last = this.state.tableList[this.state.tableList.length - 1]
+    }
     const obj = {
       BillAmount: 0,
-      BillStartDate: '',
-      BillEndDate: '',
+      BillStartDate: dateFormat(new Date()),
+      BillEndDate: dateFormat(new Date()),
       ReceivablesDate: last.ReceivablesDate || dateFormat(new Date())
     }
     obj[this.childrenKey] = []
@@ -282,7 +321,7 @@ export default class BillList extends React.Component {
     }, () => {
       setTimeout(() => {
         this.scrollToEnd()
-      }, 10)
+      }, 100)
     })
   }
 
@@ -346,14 +385,50 @@ export default class BillList extends React.Component {
     })
   }
 
+  validateHoliday() {
+    let str = ''
+    for (let i = 0; i < this.state.tableList.length; i++) {
+      const item = this.state.tableList[i]
+      const date = dateFormat(item.ReceivablesDate)
+      const text = calendar.calcHoliday(...date.split('-'))
+      if (text) {
+        str += `账期${i + 1}应付款日:${date}为【${text}】\n`
+      }
+    }
+    if (str) {
+      str += '是否进入下一步？'
+    }
+    return str
+  }
+
   validate() {
     // 验证是否填写完整
     return new Promise((resolve, reject) => {
-      debugger
+      if (this.state.tableList.length === 0) {
+        Toast.show('您还没有添加账期哦！', {
+          duration: Toast.durations.SHORT,
+          position: Toast.positions.BOTTOM
+        })
+        return reject()
+      }
       for (let i = 0; i < this.state.tableList.length; i++) {
         const item = this.state.tableList[i]
         if (!item.ReceivablesDate) {
           Toast.show('账单收款日未填写完整', {
+            duration: Toast.durations.SHORT,
+            position: Toast.positions.BOTTOM
+          })
+          return reject()
+        }
+        if (!item.BillStartDate) {
+          Toast.show('账单开始日期未填写完整', {
+            duration: Toast.durations.SHORT,
+            position: Toast.positions.BOTTOM
+          })
+          return reject()
+        }
+        if (!item.BillEndDate) {
+          Toast.show('账单结束日期未填写完整', {
             duration: Toast.durations.SHORT,
             position: Toast.positions.BOTTOM
           })
@@ -375,8 +450,27 @@ export default class BillList extends React.Component {
             })
             return reject()
           }
+          if (+cItem.Amount < 0) {
+            Toast.show('账单金额不能小于0', {
+              duration: Toast.durations.SHORT,
+              position: Toast.positions.BOTTOM
+            })
+            return reject()
+          }
         }
       }
+      // debugger
+      // if (this.props.type === 1 && this.props.contract.PayModel) {
+      //   for (let i = 0; i < this.props.contract.PayModel - 1; i++) {
+      //     if (dateFormat(this.state.tableList[i].ReceivablesDate) !== dateFormat(this.state.tableList[i + 1].ReceivablesDate)) {
+      //       Toast.show(`系统检测到第一次收款金额所包含的账期中应付款日不匹配，请检查后提交！`, {
+      //         duration: Toast.durations.SHORT,
+      //         position: Toast.positions.BOTTOM
+      //       })
+      //       return reject()
+      //     }
+      //   }
+      // }
       return resolve()
     })
   }

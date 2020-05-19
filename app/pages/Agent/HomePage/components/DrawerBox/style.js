@@ -36,6 +36,7 @@ const style = StyleSheet.create({
   },
   draw_text_right: {
     fontSize: 13,
+    width: 170,
     color: '#eeeeee'
   },
   text_indent: {
@@ -59,6 +60,10 @@ const style = StyleSheet.create({
     borderRadius: 12,
     ...DisplayStyle('row', 'center', 'center')
   },
+  draw_content_item_img: {
+    width: 12,
+    height: 12
+  },
   draw_content_item_text: {
     fontSize: 14,
     color: '#444',
@@ -77,6 +82,16 @@ const style = StyleSheet.create({
   draw_btn_text: {
     fontSize: 16,
     color: '#fff'
+  },
+  protocolPolicy: {
+    ...DisplayStyle('row', 'center', 'center'), 
+    height: 44,
+  },
+  protocolPolicyBtn: {
+    marginRight: 20
+  },
+  protocolPolicyBtnColor: {
+    color: CommonColor.color_primary,
   }
 })
 

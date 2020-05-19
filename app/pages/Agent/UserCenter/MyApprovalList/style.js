@@ -136,6 +136,13 @@ const style = StyleSheet.create({
     btn_text: {
         color:'#389ef2',
         fontSize: 12
+    },
+    headerVersion: {
+        ...DisplayStyle('row','center','center')
+    },
+    headerVersionBtn: {
+        color: CommonColor.color_white,
+        marginRight: 10
     }
 })
 export default style

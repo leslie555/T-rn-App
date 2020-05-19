@@ -1,11 +1,11 @@
 import React, {Component} from 'react'
-import {Alert, Button, Text, TouchableOpacity, View} from 'react-native'
+import {Alert, Button, Text, TouchableOpacity, View } from 'react-native'
 import styles from './style'
 import {GiftedForm} from '../../../../components/Form/GiftedForm'
 import {FullModal, Header} from '../../../../components'
 import ButtonGroup from '../../../../components/ButtonGroup'
 import {connect} from 'react-redux'
-import {DeleteReceiptNew, GetPaymentDetailsNew, GetReceiptDetailsNew, VerificationNew} from '../../../../api/payReceipt'
+import {DeleteReceiptNew, DeletePaymentNew, GetPaymentDetailsNew, GetReceiptDetailsNew, VerificationNew} from '../../../../api/payReceipt'
 import {getEnumDesByValue} from '../../../../utils/enumData'
 import {dateFormat} from '../../../../utils/dateFormat'
 import {getButtons} from '../../../../utils/buttonPermission'
@@ -13,10 +13,14 @@ import Toast from "react-native-root-toast";
 import store from "../../../../redux/store/store";
 import ImagePreview from "../../../../components/ImagePreview";
 import {deleteList,updateList} from '../../../../redux/actions/list'
+import storage from "../../../../utils/storage";
+import ActionSheet from "react-native-actionsheet";
 
 class EditOwnerResource extends React.Component {
     constructor(props) {
         super(props)
+        this.query = this.props.navigation.state.params || {} // 路由参数
+        this.ProjectName = this.props.navigation.state.params.ProjectName
         this.editType = 0 // 0新增 1修改
         this.busType = 0 // 0收款 1付款
         this.KeyID = '' // 修改用的id
@@ -79,6 +83,7 @@ class EditOwnerResource extends React.Component {
     initData() {
         this.busType = this.props.navigation.getParam('busType', 0)
         this.KeyID = this.props.navigation.getParam('KeyID', '')
+        console.log(this.busType, this.KeyID)
         this.getDetail(this.KeyID)
     }
 
@@ -92,24 +97,31 @@ class EditOwnerResource extends React.Component {
         }).then(({Data}) => {
             let DetailsMark = ''
             Data.Details.forEach(v => {
-                DetailsMark += `${v.ProjectName} (${v.PaidMoney}元)`
+                DetailsMark += `${v.ProjectName} (${v.PaidMoney}元)(${dateFormat(v.StartDate)}至${dateFormat(v.EndDate)})`
             })
             const VerificationStatusName = getEnumDesByValue('VerStatus', Data.VerificationStatus)
             const BalanceTypeName = getEnumDesByValue('AccountType', Data.BalanceType)
             const PaymentData = dateFormat(Data.PaymentData)
+            const CashierTime = dateFormat(Data.CashierTime)
             delete Data.Details
             this.state.form = {
                 ...Data,
                 DetailsMark,
                 VerificationStatusName,
                 BalanceTypeName,
-                PaymentData
+                CashierTime,
+                PaymentData,
+                CashierTime
             }
             this.setState({
                 loading: false,
                 form: this.state.form
             })
             this.buildButton()
+        }).catch(res =>{
+            this.setState({
+                loading: false
+            })
         })
     }
 
@@ -125,7 +137,7 @@ class EditOwnerResource extends React.Component {
             },
             {
                 text: '确认', onPress: () => {
-                    this.fetchDelete()
+                    this.busType === 0 ?  this.fetchDelete() : this.fetchDeletePay()
                 }
             }
         ], {cancelable: false})
@@ -158,7 +170,6 @@ class EditOwnerResource extends React.Component {
             }
         ], {cancelable: false})
     }
-
     fetchWrite(status) {
         this.setState({
             loading: true
@@ -193,7 +204,25 @@ class EditOwnerResource extends React.Component {
                 orderType: 2
             })
     }
-
+    fetchDeletePay() {
+        this.setState({
+            loading: true
+        })
+        DeletePaymentNew({
+            KeyID: this.state.form.KeyID
+        }).then(() => {
+            Toast.show(`删除成功`, {
+                duration: Toast.durations.SHORT,
+                position: Toast.positions.BOTTOM
+            })
+            this.changeStore('delete')
+            this.props.navigation.goBack()
+        }).finally(() => {
+            this.setState({
+                loading: false
+            })
+        })
+    }
     fetchDelete() {
         this.setState({
             loading: true
@@ -260,6 +289,31 @@ class EditOwnerResource extends React.Component {
             }))
         }
     }
+    handleshare() {
+        this.ActionSheet.show()
+    }
+    onActionSheetPress(id) {
+        storage.get('token').then(token => {
+            if(id === 0) {
+                this.props.navigation.navigate('AgentPayReceiptWebView', { reciptID: id, KeyID: this.KeyID, token})
+            } else if(id === 1) {
+                if(this.ProjectName.indexOf('租客租金') !== -1){
+                    this.props.navigation.navigate('AgentPayReceiptToast', { reciptID: id, KeyID: this.KeyID, token })
+                }else{
+                    this.props.navigation.navigate('AgentPayReceiptWebView', { reciptID: id, KeyID: this.KeyID, money: '0', token })
+                }
+            } else if(id === 2) {
+                this.props.navigation.navigate('AgentPayReceiptWebView', { reciptID: id, KeyID: this.KeyID, token })
+            }
+        })
+        // this.popupDialog.show()
+        // this.setState({
+        //     visible:true
+        // },()=>{
+        //     console.log(this.state.visible)
+        //     debugger
+        // })
+    }
 
     buildButton() {
         const btnOptions = []
@@ -270,15 +324,22 @@ class EditOwnerResource extends React.Component {
             if (data.find(x => x.EActionName === 'Delete') && this.state.form.VerificationStatus === 1 && this.state.form.PaidMoney === 0 && this.busType === 0) {
                 btnOptions.push({label: '删除', value: 'Delete'})
             }
-            if (data.find(x => x.EActionName === 'Write') && this.state.form.VerificationStatus === 1 && this.state.form.PaidMoney === 0) {
-                btnOptions.push({label: '核销', value: 'Write'})
-            }
+            // if (data.find(x => x.EActionName === 'Write') && this.state.form.VerificationStatus === 1 && this.state.form.PaidMoney === 0) {
+            //     btnOptions.push({label: '核销', value: 'Write'})
+            // }
             if (data.find(x => x.EActionName === 'ToPay') && this.state.form.VerificationStatus === 1 && this.busType === 0) {
                 btnOptions.push({label: '去支付', value: 'ToPay'})
             }
-            if (data.find(x => x.EActionName === 'Write') && this.state.form.OnLineOrOffLine !== 1 && this.state.form.VerificationStatus === 2) {
+            if (data.find(x => x.EActionName === 'UnWrite') && this.state.form.OnLineOrOffLine !== 1 && this.state.form.VerificationStatus === 2) {
                 btnOptions.push({label: '撤销核销', value: 'UnWrite'})
             }
+            if (data.find(x => x.EActionName === 'Delete') && this.state.form.VerificationStatus === 1 && this.busType === 1){
+                btnOptions.push({label: '删除', value: 'Delete'})
+            }
+            if (this.state.form.VerificationStatus === 2 && this.busType === 0) {
+                btnOptions.push({label: '收款单据', value: 'share'})
+            }
+            
             this.setState({
                 btnOptions
             })
@@ -367,6 +428,13 @@ class EditOwnerResource extends React.Component {
                         value={form.PaymentData + ''}
                     />
                     <GiftedForm.LabelWidget
+                        name='CashierTime'
+                        title='核销日期'
+                        required={false}
+                        renderRight={false}
+                        value={form.CashierTime + ''}
+                    />
+                    <GiftedForm.LabelWidget
                         name='OutRoomName'
                         title='经手人'
                         required={false}
@@ -413,7 +481,7 @@ class EditOwnerResource extends React.Component {
                         name='Remarks'
                         required={false}
                         disabled={true}
-                        maxLength={100}
+                        maxLength={300}
                         value={form.DetailsMark || '无'}
                     />
                     <GiftedForm.NoticeWidget title={`图片凭证`}/>
@@ -435,8 +503,19 @@ class EditOwnerResource extends React.Component {
                         handleWriteClick={() => this.handleWrite()}
                         handleUnWriteClick={() => this.handleUnWrite()}
                         handleToPayClick={() => this.handleToPay()}
+                        handleshareClick={() => this.handleshare()}
                     />
                 </View>
+                <ActionSheet
+                    ref={o => (this.ActionSheet = o)}
+                    title={'收款单据'}
+                    options={['模板一', '模板二','模板三', '取消']}
+                    cancelButtonIndex={3}
+                    destructiveButtonIndex={3}
+                    onPress={idx => {
+                        this.onActionSheetPress(idx)
+                    }}
+                />
             </View>
         )
     }

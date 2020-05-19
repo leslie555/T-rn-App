@@ -9,10 +9,12 @@ import {toastMsg} from "../../../../utils/toastMsg";
 import ListLoading from "../../../../components/ListLoading";
 import store from "../../../../redux/store/store";
 import FullModal from "../../../../components/FullModal";
+import AliImage from "../../../../components/AliImage";
 import {priceFormat} from '../../../../utils/priceFormat'
 import {connect} from 'react-redux'
 import {updateList} from '../../../../redux/actions/list'
 import { updateAccountDetail } from '../../../../redux/actions/accountDetail'
+import { baseURL } from '../../../../config'
 
 class PayPage extends Component {
     constructor(props) {
@@ -105,8 +107,12 @@ class PayPage extends Component {
                         listLoading: false
                     })
                     if (res.Data) {
-                        this.setState({
-                            payCodeUrl: res.Data.QrcodeUrl,
+                      let url = res.Data.QrcodeUrl.replace('http://testservers','https://testservers')
+                      url = url.replace('http://servers','https://servers')
+                      url = url.replace('http://127.0.0.1:1920', baseURL)
+                      url = url.replace('http://127.0.0.1:1921', baseURL)
+                      this.setState({
+                            payCodeUrl: url,
                             OrderId: res.Data.OrderId,
                             listLoading: false
                         })
@@ -293,12 +299,12 @@ class PayPage extends Component {
             <View style={style.qrcode_img_container}>
                 <View style={style.qrcode_img_content}>
                     <View style={style.qrcode_img_box}>
-                        <QRCode
-                            style={style.qrcode_img}
-                            value={this.state.payCodeUrl}
-                            size={200}
-                            bgColor='black'
-                            fgColor='white'/>
+                      {this.state.payMode==1?<AliImage style={style.qrcode_img} source={{uri:this.state.payCodeUrl}}/>:<QRCode
+                          style={style.qrcode_img}
+                          value={this.state.payCodeUrl}
+                          size={200}
+                          bgColor='black'
+                          fgColor='white'/>}
                     </View>
                     <View style={style.pay_notice}>
                         <Text style={style.qrcode_notice}>请扫描二维码进行支付</Text>

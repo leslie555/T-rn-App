@@ -18,7 +18,8 @@ module.exports = createReactClass({
 
   getDefaultProps() {
     return {
-      type: 'SwitchWidget'
+      type: 'SwitchWidget',
+      required: true
     }
   },
 
@@ -26,8 +27,7 @@ module.exports = createReactClass({
     return (
       <View style={this.getStyle('rowContainer')}>
         <View style={this.getStyle('row')}>
-          {this._renderImage()}
-
+          {this._renderStar()}
           <Text numberOfLines={1} style={this.getStyle('switchTitle')}>
             {this.props.title}
           </Text>
@@ -41,6 +41,7 @@ module.exports = createReactClass({
               }}
               value={this.state.value}
             />
+            <Text style="switchText">{this.state.value ? '是' : '否'}</Text>  
           </View>
         </View>
         {/* {this._renderValidationError()} */}
@@ -67,14 +68,17 @@ module.exports = createReactClass({
     switchTitle: {
       fontSize: 15,
       color: '#000',
-      flex: 1,
-      marginLeft: 20
+      flex: 1
     },
     switchAlignRight: {
-      alignItems: 'flex-end',
+      flexDirection: 'row',
+      alignItems: 'center',
       justifyContent: 'center',
       marginRight: 10
     },
-    switch: {}
+    switch: {},
+    switchText: {
+      fontSize: 14
+    }
   }
 })

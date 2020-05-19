@@ -286,7 +286,7 @@ import { deleteList } from '../../../../../redux/actions/list'
               required= {false}
               renderRight={false}
               disabled={true}
-              value={item.Amount + '元'}
+              value={(item.Amount||'') + '元'}
           />
           <GiftedForm.LabelWidget
               name='UnPaidMoney'
@@ -294,7 +294,7 @@ import { deleteList } from '../../../../../redux/actions/list'
               required= {false}
               renderRight={false}
               disabled={true}
-              value={ item.UnPaidMoney + '元'}
+              value={ (item.UnPaidMoney||'') + '元'}
           />
           <GiftedForm.LabelWidget
               name='VoucherNumber'

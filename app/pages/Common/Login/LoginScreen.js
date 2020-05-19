@@ -4,6 +4,7 @@ import Logo from './Logo'
 import Form from './Form'
 import Wallpaper from './Wallpaper'
 import ButtonSubmit from './ButtonSubmit'
+import ServicePolicy from './ServicePolicy'
 import {checkAppUpdate,DownloadModal} from '../../../utils/updateUtil'
 import storage from "../../../utils/storage";
 
@@ -57,7 +58,11 @@ class LoginScreen extends Component {
         <ButtonSubmit
           navigation={this.props.navigation}
           userinfo={this.state.userinfo}
+          checkUpdate={()=>{
+            checkAppUpdate(1)
+          }}
         />
+        <ServicePolicy navigation={this.props.navigation}/>
       </Wallpaper>
     )
   }

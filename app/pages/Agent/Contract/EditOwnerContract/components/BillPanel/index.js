@@ -13,8 +13,8 @@ export default class BillPanel extends React.Component {
     this.bookRef = null
   }
 
-  initBillData(data) {
-    this.billRef.initData(data)
+  initBillData(data,arr) {
+    this.billRef.initData(data,arr)
   }
 
   initBookData(data) {
@@ -29,6 +29,10 @@ export default class BillPanel extends React.Component {
     return this.bookRef.getValue()
   }
 
+  validateHoliday() {
+    return this.billRef.validateHoliday(...arguments)
+  }
+
   validate() {
     return this.billRef.validate()
   }
@@ -36,29 +40,11 @@ export default class BillPanel extends React.Component {
   render() {
     return (
         <View style={styles.bill_box}>
-          <ScrollableTabView style={styles.tab_page_wrap} initialPage={0}
-                             scrollWithoutAnimation={true}
-                             tabBarUnderlineStyle={{height: 2, backgroundColor: '#289ef2'}}
-                             tabBarBackgroundColor={`#fff`}
-                             tabBarActiveTextColor={`#389ef2`}
-                             tabBarInactiveTextColor={`#999`}
-                             tabBarTextStyle={{fontSize: 16, position: 'relative', top: 4}}
-                             renderTabBar={() => <DefaultTabBar/>}
-                             prerenderingSiblingsNumber={1}
-          >
-            <View style={{flex: 1}} tabLabel="账单费用">
-              <BillList {...this.props}
-                        ref={(refSteps) => {
-                          this.billRef = refSteps
-                        }}
-              />
-            </View>
-            <View style={{flex: 1}} tabLabel="记账费用">
-              <BookKeeping {...this.props} ref={(refSteps) => {
-                this.bookRef = refSteps
-              }}/>
-            </View>
-          </ScrollableTabView>
+            <BillList {...this.props}
+                      ref={(refSteps) => {
+                        this.billRef = refSteps
+                      }}
+            />
         </View>
     )
   }

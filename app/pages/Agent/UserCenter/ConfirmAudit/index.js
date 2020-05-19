@@ -80,6 +80,7 @@ class ConfirmAudit extends Component {
     }
 
     submitForm() {
+        // debugger
         let isPassValidate = true
         if (!this.state.auditStatus) {
             this.toastMsg('请选择审核状态')
@@ -112,19 +113,32 @@ class ConfirmAudit extends Component {
                 //         AuditTime: getNowFormatDate()
                 //     }
                 // }))
+
                 // 更新缓存
-                const data = this.props.allList['AgentApprovalList_WaitAudit'].find(item=>{
+                // const data = this.props.allList['AgentApprovalList_WaitAudit'].find(item=>{
+                //     return item.KeyID === this.state.KeyID
+                // })
+                // store.dispatch(deleteList({
+                //     key:'AgentApprovalList_WaitAudit',
+                //     KeyID: this.state.KeyID,
+                // }))
+                const version = this.props.navigation.state.params.version
+                const versionSelect = version === 'new' ? 'AgentApprovalNewList' : 'AgentApprovalList'
+                
+                const data = this.props.allList[versionSelect].find(item=>{
                     return item.KeyID === this.state.KeyID
                 })
                 store.dispatch(deleteList({
-                    key:'AgentApprovalList_WaitAudit',
+                    key:versionSelect,
                     KeyID: this.state.KeyID,
                 }))
                 this.props.dispatch(addList({
-                    key:this.state.auditStatus==2?'AgentApprovalList_Passed':'AgentApprovalList_noPass',
+                    // key:this.state.auditStatus==2?'AgentApprovalList_Passed':'AgentApprovalList_noPass',
+                    key:this.state.auditStatus==2 && versionSelect,
                     data: {...data,AuditStatus: this.state.auditStatus}
                 }))
-                this.props.navigation.navigate('AgentMyApprovalList',{type:this.state.auditStatus==2?1:2})
+                // this.props.navigation.navigate('AgentMyApprovalList',{type:this.state.auditStatus==2?1:2})
+                this.props.navigation.navigate(version === 'new' ? 'AgentMyApprovalNewList' : 'AgentMyApprovalList',{type:this.state.auditStatus==2?1:2})
             }).catch(() => {
                 this.setState({
                     loading: false

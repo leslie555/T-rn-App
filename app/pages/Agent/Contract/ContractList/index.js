@@ -66,19 +66,24 @@ export default class HomePage extends React.Component {
     })
   }
 
-  onChangeText = text => {
+  onChangeText = (text, idx) => {
     const seachInfo = {}
-    seachInfo.Keyword = text
+    if (idx === 0) {
+      seachInfo.CommunityName = text
+    } else {
+      seachInfo.HouseNumber = text
+    }
     if (this.state.page === 0) {
       this.TenantList.search(seachInfo)
     } else {
       this.OwnerList.search(seachInfo)
     }
   }
-  onCancel = text => {
-    if (text) {
+  onCancel = flag => {
+    if (flag) {
       const seachInfo = {}
-      seachInfo.Keyword = ''
+      seachInfo.CommunityName = ''
+      seachInfo.HouseNumber = ''
       if (this.state.page === 0) {
         this.TenantList.search(seachInfo)
       } else {
@@ -89,9 +94,13 @@ export default class HomePage extends React.Component {
       isShow: false
     })
   }
-  onClear = () => {
+  onClear = idx => {
     const seachInfo = {}
-    seachInfo.Keyword = ''
+    if (idx === 0) {
+      seachInfo.CommunityName = ''
+    } else {
+      seachInfo.HouseNumber = ''
+    }
     if (this.state.page === 0) {
       this.TenantList.search(seachInfo)
     } else {
@@ -147,7 +156,8 @@ export default class HomePage extends React.Component {
               {this.state.isShow && (
                 <SearchBar
                   hideLeft
-                  placeholder={'电话/房源名称/房间号/小区名称'}
+                  multiple
+                  placeholder={['小区名称', '房间号']}
                   onChangeText={this.onChangeText}
                   onCancel={this.onCancel}
                   onClear={this.onClear}

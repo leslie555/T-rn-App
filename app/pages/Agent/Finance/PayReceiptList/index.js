@@ -1,4 +1,4 @@
-import React, {Component, Fragment} from 'react'
+import React, { Component, Fragment } from 'react'
 import {
     View,
     Text,
@@ -10,46 +10,46 @@ import {
 } from 'react-native'
 import IconFont from '../../../../utils/IconFont/index'
 import style from './style'
-import {CommonColor, Container} from "../../../../styles/commonStyles";
-import {getEnumListByKey} from "../../../../utils/enumData";
-import {dateFormat} from "../../../../utils/dateFormat";
-import {GetReceiveListNew, GetPaymentListNew} from "../../../../api/payReceipt";
+import { CommonColor, Container } from "../../../../styles/commonStyles";
+import { getEnumListByKey } from "../../../../utils/enumData";
+import { dateFormat } from "../../../../utils/dateFormat";
+import { GetReceiveListNew, GetPaymentListNew } from "../../../../api/payReceipt";
 // import {MenuDatePicker} from '../../../../components/MoreFilterMenu'
-import {connect} from 'react-redux'
-import {List,ListSelector} from "../../../../components";
+import { connect } from 'react-redux'
+import { List, ListSelector } from "../../../../components";
 import SearchBar from "../../../../components/SearchBar";
-import {withNavigation} from "react-navigation";
+import { withNavigation } from "react-navigation";
 import ScrollableTabView from "react-native-scrollable-tab-view";
-import {TabBar} from "../../../../components";
+import { TabBar } from "../../../../components";
 import rootBackHandle from "../../../../utils/rootBackHandle";
 
-class ReceiveBillList extends Component{
+class ReceiveBillList extends Component {
     constructor(props) {
         super(props)
         this.state = {
             listConfig: [
                 {
-                    type:'title',
-                    title:'核销状态',
-                    data:[]
+                    type: 'title',
+                    title: '核销状态',
+                    data: []
                 },
                 {
-                    type:'title',
-                    title:'收款方式',
-                    data:[
-                        {title: '全部', value: ''},
-                        {title: '系统收款', value: '1'},
-                        {title: '线下收款', value: '2'}
+                    type: 'title',
+                    title: '收款方式',
+                    data: [
+                        { title: '全部', value: '' },
+                        { title: '系统收款', value: '1' },
+                        { title: '线下收款', value: '2' }
                     ]
                 },
                 {
-                    type:'panel',
-                    title:'更多筛选',
-                    components:[
+                    type: 'panel',
+                    title: '更多筛选',
+                    components: [
                         {
-                            type:'checkbox',
-                            title:'账户类型',
-                            data:[]
+                            type: 'checkbox',
+                            title: '账户类型',
+                            data: []
                         },
                         {
                             type: 'datepicker',
@@ -83,10 +83,10 @@ class ReceiveBillList extends Component{
             value: val.Value
         }))
         verStatusList.shift()
-        verStatusList.unshift({title: '全部', value: ''})
+        verStatusList.unshift({ title: '全部', value: '' })
         this.state.listConfig[0].data = verStatusList
         this.setState({
-            listConfig:this.state.listConfig
+            listConfig: this.state.listConfig
         })
 
         // 获取账户管理枚举
@@ -95,12 +95,12 @@ class ReceiveBillList extends Component{
             title: val.Description,
             value: val.Value
         }))
-        accountList.unshift({title: '全部', value: ''})
+        accountList.unshift({ title: '全部', value: '' })
         this.state.listConfig[2].components[0].data = accountList
     }
 
     refreshList() {
-        this.state.form = {...this.state.form}
+        this.state.form = { ...this.state.form }
         this.setState({
             form: this.state.form
         })
@@ -117,7 +117,7 @@ class ReceiveBillList extends Component{
     }
 
     updateKeyword(val) {
-        this.setFormScreen({KeyWord:val})
+        this.setFormScreen({ KeyWord: val })
     }
 
     onSelectMenu = (index, subindex, data) => {
@@ -141,7 +141,7 @@ class ReceiveBillList extends Component{
                             endTime: ''
                         }
                     }
-                    switch(index) {
+                    switch (index) {
                         case 0:
                             form.AccountType = item.data.value
                             break
@@ -166,13 +166,13 @@ class ReceiveBillList extends Component{
                 request={GetReceiveListNew}
                 form={this.state.form}
                 listKey={'AgentPayReceiptList_receive'}
-                setForm={form => this.setState({form})}
+                setForm={form => this.setState({ form })}
                 renderItem={this.props.renderBillItem}
             />
         )
     }
 
-    render(){
+    render() {
         return (
             <ListSelector
                 ref={ListSelector => (this.ListSelector = ListSelector)}
@@ -184,24 +184,24 @@ class ReceiveBillList extends Component{
     }
 }
 
-class PayBillList extends Component{
+class PayBillList extends Component {
     constructor(props) {
         super(props)
         this.state = {
             listConfig: [
                 {
-                    type:'title',
-                    title:'核销状态',
-                    data:[]
+                    type: 'title',
+                    title: '核销状态',
+                    data: []
                 },
                 {
-                    type:'panel',
-                    title:'更多筛选',
-                    components:[
+                    type: 'panel',
+                    title: '更多筛选',
+                    components: [
                         {
-                            type:'checkbox',
-                            title:'账户类型',
-                            data:[]
+                            type: 'checkbox',
+                            title: '账户类型',
+                            data: []
                         },
                         {
                             type: 'datepicker',
@@ -235,10 +235,10 @@ class PayBillList extends Component{
             value: val.Value
         }))
         verStatusList.shift()
-        verStatusList.unshift({title: '全部', value: ''})
+        verStatusList.unshift({ title: '全部', value: '' })
         this.state.listConfig[0].data = verStatusList
         this.setState({
-            listConfig:this.state.listConfig
+            listConfig: this.state.listConfig
         })
 
         // 获取账户管理枚举
@@ -247,7 +247,7 @@ class PayBillList extends Component{
             title: val.Description,
             value: val.Value
         }))
-        accountList.unshift({title: '全部', value: ''})
+        accountList.unshift({ title: '全部', value: '' })
         this.state.listConfig[1].components[0].data = accountList
     }
 
@@ -268,7 +268,7 @@ class PayBillList extends Component{
                             endTime: ''
                         }
                     }
-                    switch(index) {
+                    switch (index) {
                         case 0:
                             form.AccountType = item.data.value
                             break
@@ -296,7 +296,7 @@ class PayBillList extends Component{
     }
 
     updateKeyword(val) {
-        this.setFormScreen({KeyWord:val})
+        this.setFormScreen({ KeyWord: val })
     }
 
     renderContent() {
@@ -307,13 +307,13 @@ class PayBillList extends Component{
                 request={GetPaymentListNew}
                 form={this.state.form}
                 listKey={'AgentPayReceiptList_pay'}
-                setForm={form => this.setState({form})}
+                setForm={form => this.setState({ form })}
                 renderItem={this.props.renderBillItem}
             />
         )
     }
 
-    render(){
+    render() {
         return (
             <ListSelector
                 ref={ListSelector => (this.ListSelector = ListSelector)}
@@ -339,13 +339,13 @@ class PayReceiptList extends Component {
 
     componentDidMount() {
         const type = this.props.navigation.getParam('type')
-        if(type) {
+        if (type) {
             this.setState({
                 activeIndex: type
             })
         }
         const isRefresh = this.props.navigation.getParam('isRefresh', false)
-        if(isRefresh) {
+        if (isRefresh) {
             this.receiveList.refreshList()
         }
     }
@@ -354,8 +354,8 @@ class PayReceiptList extends Component {
         this.rootBackHandle.remove()
     }
 
-    renderBillItem({item}) {
-        const ProjectName = item.ProjectName.length>16?item.ProjectName.substr(0,16)+'...':item.ProjectName
+    renderBillItem({ item }) {
+        const ProjectName = item.ProjectName.length > 16 ? item.ProjectName.substr(0, 16) + '...' : item.ProjectName
         return (
             <View style={style.outside_box}>
                 <View style={style.inside_box}>
@@ -368,7 +368,7 @@ class PayReceiptList extends Component {
                                 ) : (<Text style={style.item_title_status2}>已核销</Text>)
                             }
                         </View>
-                        <View style={style.line}/>
+                        <View style={style.line} />
                         <View style={style.bill_detail}>
                             <Text style={style.bill_detail_title}>明细：</Text>
                             <Text style={style.bill_detail_info}>{ProjectName}</Text>
@@ -387,11 +387,11 @@ class PayReceiptList extends Component {
     }
 
     toDetail(item) {
-        this.props.navigation.navigate('AgentPayReceiptDetail', {KeyID: item.KeyID, busType: this.state.activeIndex})
+        this.props.navigation.navigate('AgentPayReceiptDetail', { KeyID: item.KeyID, busType: this.state.activeIndex, ProjectName: item.ProjectName })
     }
 
     toAddBill() {
-        this.props.navigation.navigate('AgentEditPayReceipt', {editType: 0, busType: this.state.activeIndex}) // 0收款 1付款 KeyID 修改用的id
+        this.props.navigation.navigate('AgentEditPayReceipt', { editType: 0, busType: this.state.activeIndex }) // 0收款 1付款 KeyID 修改用的id
     }
 
     toggleSearch() {
@@ -401,7 +401,7 @@ class PayReceiptList extends Component {
     }
 
     searchKeyword(val) {
-        if(this.state.activeIndex == 0) {
+        if (this.state.activeIndex == 0) {
             this.receiveList.updateKeyword(val)
         } else {
             this.payList.updateKeyword(val)
@@ -447,30 +447,32 @@ class PayReceiptList extends Component {
                                     hideLeft
                                     placeholder='请输入合同编号/小区名称/房间号/房源名称'
                                     onChangeText={(text) => {
-                                        this.searchKeyword(text)}
+                                        this.searchKeyword(text)
                                     }
-                                    onCancel={(text)=>{
+                                    }
+                                    onCancel={(text) => {
                                         this.toggleSearch()
                                         text && this.searchKeyword('')
                                     }}
-                                    onClear={()=>{
-                                        this.searchKeyword('')}
+                                    onClear={() => {
+                                        this.searchKeyword('')
+                                    }
                                     }
                                 />
                             )}
                         </TabBar>
                     )}
-                    >
+                >
                     <ReceiveBillList
                         tabLabel='收款'
-                        ref={receiveList=>{
+                        ref={receiveList => {
                             this.receiveList = receiveList
                         }}
                         renderBillItem={this.renderBillItem.bind(this)}
                     />
                     <PayBillList
                         tabLabel='付款'
-                        ref={payList=>{
+                        ref={payList => {
                             this.payList = payList
                         }}
                         renderBillItem={this.renderBillItem.bind(this)}

@@ -256,7 +256,7 @@ export default class MyThings extends Component {
                     })
                 })
             }).catch(() => {
-                this.toastMsg('网络错误,请稍后重试')
+                // this.toastMsg('网络错误,请稍后重试')
                 this.state.openRefresh = true
                 this.state.isRefresh = false
                 this.setState({

@@ -43,7 +43,9 @@ const list = handleActions(
       const key = action.payload.key
       if (!state[key]) return { ...state }
       const id = action.payload.KeyID
-      const index = state[key].findIndex(val => val[action.payload.primaryKey||'KeyID'] === id)
+      const index = state[key].findIndex(
+        val => val[action.payload.primaryKey || 'KeyID'] === id
+      )
       const _list = [...state[key]]
       _list.splice(index, 1)
       return {

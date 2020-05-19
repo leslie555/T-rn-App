@@ -1,13 +1,14 @@
 import NavigationService from '../../router/NavigationService'
 
-const showSelectAny = function (options) {
+const showSelectAny = function(options) {
   let selectAnyProps = {}
   switch (options.apiType) {
     case 1:
       selectAnyProps = {
         searchKey: 'HouseName',
-        placeholder: '输入房源关键字进行搜索',
+        placeholder:'输入房源关键字进行搜索',
         isPaging: false,
+        pageKey: 'para',
         leftLabel: 'HouseName',
         ...options
       }
@@ -40,10 +41,18 @@ const showSelectAny = function (options) {
         ...options
       }
       break
+    case 5:
+      selectAnyProps = {
+        isPaging: false,
+        placeholder: '输入街道关键字进行搜索',
+        leftLabel: 'Street',
+        pageKey: 'pageParam',
+        emptyRender: true,
+        ...options
+      }
+      break
   }
   NavigationService.navigate('AgentSelectAny', selectAnyProps)
 }
 
-export {
-  showSelectAny
-}
+export { showSelectAny }

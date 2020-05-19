@@ -191,6 +191,7 @@ class CompleteHouse extends React.Component {
         ToiletCount: 0,
         TotalFloor: '',
         InFloor: '',
+        Immobilisations: 0,
         ContractRemark: '',
         IsElevator: 1,
       },
@@ -472,6 +473,22 @@ class CompleteHouse extends React.Component {
   }
 
   initPageData(data) {
+    if(data.EnterType==='3'&&data.HavaTenContract){
+      Alert.alert(
+          '提示',
+          '该房源为整合组房源并且存在租客合同，若要修改信息请前往"电脑版"修改',
+          [
+            {
+              text: '我知道了',
+              onPress: () => {
+                this.props.navigation.goBack()
+              }
+            }
+          ],
+          {cancelable: false}
+      )
+      return
+    }
     // this.state.allKeyID = data.priceAllTable.KeyID
     this.state.KeyID = !data.Rh.KeyID ? 0 : data.Rh.KeyID
     this.state.HavaTenContract = data.HavaTenContract
@@ -504,6 +521,8 @@ class CompleteHouse extends React.Component {
       this.state.HouseInfo.TotalFloor = String(data.TotalFloor)
       // 所在楼层
       this.state.HouseInfo.InFloor = String(data.InFloor)
+      // 固定资产原值
+      this.state.HouseInfo.Immobilisations = data.Immobilisations
       // 是否电梯房
       this.state.HouseInfo.IsElevator = data.IsElevator
       // 面积
@@ -598,6 +617,13 @@ class CompleteHouse extends React.Component {
         }
         if (!validateNumber(values0.InFloor)) {
           Toast.show('所在楼层必须为数字', {
+            duration: Toast.durations.SHORT,
+            position: Toast.positions.BOTTOM
+          })
+          return false
+        }
+        if (!validateNumber(values0.Immobilisations)) {
+          Toast.show('固定资产原值必须为数字', {
             duration: Toast.durations.SHORT,
             position: Toast.positions.BOTTOM
           })
@@ -967,6 +993,13 @@ class CompleteHouse extends React.Component {
               maxLength={10}
               value={HouseInfo.HouseArea}
           />
+          <GiftedForm.TextInputWidget
+              name='Immobilisations'
+              title='固定资产原值'
+              keyboardType={this.numberPad}
+              maxLength={12}
+              value={HouseInfo.Immobilisations + ''}
+          />
           <GiftedForm.NoticeWidget title={`其他费用项目`}/>
           <View style={styles.Other_program}>
             {OtherBtnList}
@@ -1131,8 +1164,8 @@ class CompleteHouse extends React.Component {
     // const { HouseInfo } = this.state
     const imgList = this.state.ImageUpload.map((ele, index) => (
         <View style={{marginBottom: 20}} key={index}>
-          <GiftedForm.NoticeWidget title={ele.RoomName}/>
-          <UploadFile list={this.state.ImageUpload[index].ImgList} type={`CompleteHouse`}
+          <GiftedForm.NoticeWidget title={ele.RoomName} required/>
+          <UploadFile busType={1} list={this.state.ImageUpload[index].ImgList} type={`CompleteHouse`}
                       onChange={(data) => this.onUploadFileChange(data, index)}/>
         </View>
     ))
@@ -1148,7 +1181,7 @@ class CompleteHouse extends React.Component {
             formName='ruleForm2'
             formStyles={styles.form_style}
         >
-          <GiftedForm.NoticeWidget title={`上传房源图片`}/>
+          <GiftedForm.NoticeWidget title={`上传房源图片`} required/>
           {/* <UploadFile list={this.state.ImageUpload} type={`EditOwnerContract`} onChange={(data) => this.onUploadFileChange(data)}></UploadFile> */}
           {imgList}
           <GiftedForm.NoticeWidget title={`备注信息`}/>
@@ -1287,6 +1320,7 @@ class CompleteHouse extends React.Component {
   }
 
   saveForm() {
+    if(!this.validateImg()) return
     var saveType = ''
     const typeLink = this.props.navigation.state.params.Badge
     if (typeLink === 'ToAudit') {
@@ -1319,6 +1353,8 @@ class CompleteHouse extends React.Component {
       TotalFloor: this.state.HouseInfo.TotalFloor,
       // 所在楼层
       InFloor: this.state.HouseInfo.InFloor,
+      // 固定资产原值
+      Immobilisations: this.state.HouseInfo.Immobilisations,
       // 是否电梯房
       IsElevator: this.state.HouseInfo.IsElevator,
       // 面积
@@ -1374,6 +1410,7 @@ class CompleteHouse extends React.Component {
   }
 
   submitForm() {
+    if(!this.validateImg()) return
     this.setState({
       isShowModal: true
     })
@@ -1398,6 +1435,8 @@ class CompleteHouse extends React.Component {
         TotalFloor: this.state.HouseInfo.TotalFloor,
         // 所在楼层
         InFloor: this.state.HouseInfo.InFloor,
+        // 固定资产原值
+        Immobilisations: this.state.HouseInfo.Immobilisations,
         // 是否电梯房
         IsElevator: this.state.HouseInfo.IsElevator,
         // 面积
@@ -1453,6 +1492,23 @@ class CompleteHouse extends React.Component {
     } else {
       this.saveForm()
     }
+  }
+
+  validateImg() {
+    let flag = false
+    this.state.ImageUpload.forEach(x => {
+      if (x.ImgList.length === 0) {
+        flag = true
+      }
+    })
+    if (flag) {
+      Toast.show('公共区域和房间图片都必须上传才能提交', {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM
+      })
+      return false
+    }
+    return true
   }
 
   handleBack() {

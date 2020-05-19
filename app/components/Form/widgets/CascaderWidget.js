@@ -95,13 +95,25 @@ module.exports = createReactClass({
     const {data, mapKey} = this.props
     const {value} = this.state
     for (let i = 0; i < data.length; i++) {
-      const _data = {}
-      let nameArr = []
-      if (data[i][mapKey.children]) {
-        nameArr = data[i][mapKey.children].map(val => val[mapKey.label])
+      const item = data[i]
+      if (item[mapKey.children]) {
+        const nameArr = []
+        for (let j = 0;j< item[mapKey.children].length;j++) {
+          const cItem = item[mapKey.children][j]
+          if (cItem[mapKey.children]) {
+            nameArr.push({
+              [cItem[mapKey.label]]: cItem[mapKey.children].map(val => val[mapKey.label])
+            })
+          } else {
+            nameArr.push(cItem[mapKey.label])
+          }
+        }
+        pickerData.push({
+          [item[mapKey.label]]: nameArr
+        })
+      } else {
+        pickerData.push(item[mapKey.label])
       }
-      _data[data[i][mapKey.label]] = nameArr
-      pickerData.push(_data)
     }
     const selectedValue = []
     let next = data
@@ -171,7 +183,7 @@ module.exports = createReactClass({
       borderBottomWidth: 1,
       borderColor: '#eee'
     },
-    underlayColor: '#c7c7cc',
+    underlayColor: '#eee',
     row: {
       flexDirection: 'row',
       height: 44,

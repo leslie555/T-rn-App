@@ -103,37 +103,44 @@ module.exports = createReactClass({
   },
   render() {
     return (
-        <TouchableHighlight
-            onPress={() => {
-              this.onPress()
-            }}
-            underlayColor={this.getStyle('underlayColor').pop()}
-            {...this.props} // mainly for underlayColor
-            style={this.getStyle('rowContainer')}
-        >
-          <View style={this.getStyle('row')}>
-            {this._renderImage()}
-            {this._renderStar()}
-            <Text numberOfLines={1} style={this.getStyle('modalTitle')}>
-              {this.props.title}
+      <TouchableHighlight
+        onPress={() => {
+          this.onPress()
+        }}
+        underlayColor={this.getStyle('underlayColor').pop()}
+        {...this.props} // mainly for underlayColor
+        style={this.getStyle('rowContainer')}
+      >
+        <View style={this.getStyle('row')}>
+          {this._renderImage()}
+          {this._renderStar()}
+          <Text numberOfLines={1} style={this.getStyle('modalTitle')}>
+            {this.props.title}
+          </Text>
+          <View style={this.getStyle('alignRight')}>
+            <Text
+              numberOfLines={1}
+              style={[
+                this.getStyle('modalValue'),
+                this.state.selectedValue ? { color: '#333' } : null,
+                this.props.disabled?{color:'#888'}:null
+              ]}
+            >
+              {this.state.selectedValue || '请选择'}
             </Text>
-            <View style={this.getStyle('alignRight')}>
-              <Text numberOfLines={1} style={[this.getStyle('modalValue'),this.state.selectedValue?{color:'#333'}:null]}>
-                {this.state.selectedValue || '请选择'}
-              </Text>
-            </View>
-            {this.renderDisclosure()}
-            <Picker
-                visible={this.state.visible}
-                pickerData={this.state.data}
-                selectedValue={this.state.selectedValue}
-                onPickerConfirm={this.onPickerConfirm}
-                closeModal={() => {
-                  this.setState({visible: false})
-                }}
-            />
           </View>
-        </TouchableHighlight>
+          {this.renderDisclosure()}
+          <Picker
+            visible={this.state.visible}
+            pickerData={this.state.data}
+            selectedValue={this.state.selectedValue}
+            onPickerConfirm={this.onPickerConfirm}
+            closeModal={() => {
+              this.setState({ visible: false })
+            }}
+          />
+        </View>
+      </TouchableHighlight>
     )
   },
   defaultStyles: {
@@ -147,7 +154,7 @@ module.exports = createReactClass({
       borderBottomWidth: 1,
       borderColor: '#eee'
     },
-    underlayColor: '#c7c7cc',
+    underlayColor: '#eee',
     row: {
       flexDirection: 'row',
       height: 44,

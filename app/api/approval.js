@@ -9,3 +9,20 @@ export function BatchExcuteAudit(data) {
         data
     })
 }
+
+// 采购部审核列表
+export function CGBApprovalList(data) {
+  return request({
+    url: '/CompanyMethod/CGBApprovalList',
+    method: 'post',
+    data
+  })
+}
+// 采购部审核按钮
+export function CGBApprovalOperation(data) {
+  return request({
+    url: '/CompanyMethod/CGBApprovalOperation',
+    method: 'post',
+    data
+  })
+}

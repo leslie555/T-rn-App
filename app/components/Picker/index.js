@@ -9,7 +9,9 @@ import {
   pickerInit,
   showPicker,
   timePickerInit,
-  dateYearMonthInit
+  dateYearMonthInit,
+  regionCityInit,
+  CityRegionInit
 } from '../../utils/Picker'
 
 export default class Picker extends Component {
@@ -41,6 +43,9 @@ export default class Picker extends Component {
       case 'cascader':
         this.picker = cascaderInit
         break
+      case 'regionCC':
+          this.picker = regionCityInit
+          break 
       default:
         this.picker = pickerInit
         break

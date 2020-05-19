@@ -1,7 +1,7 @@
-import React, { Component } from "react"
-import { Text, View, FlatList } from "react-native"
+import React, { Component } from 'react'
+import { Text, View, FlatList } from 'react-native'
 import styles from './style'
-import { dateFormat } from "../../../../../utils/dateFormat"
+import { dateFormat } from '../../../../../utils/dateFormat'
 
 export default class RenovationProgress extends Component {
   constructor(props) {
@@ -9,9 +9,9 @@ export default class RenovationProgress extends Component {
   }
   static defaultProps = {
     item: {
-      Category: "",
-      CreaterTime:"0001-01-01T00:00:00",
-      Content: ""
+      Category: '',
+      CreaterTime: '0001-01-01T00:00:00',
+      Content: ''
     }
   }
 
@@ -22,14 +22,18 @@ export default class RenovationProgress extends Component {
           <View style={styles.detail_container_top_inCircle} />
         </View>
         <Text
-          style={[styles.detail_container_top_status, { color: "#389ef2" }]}
+          style={[styles.detail_container_top_status, { color: '#389ef2' }]}
         >
           {item.Category}
         </Text>
       </View>
       <View style={styles.detail_container_body}>
-          {index !== (this.props.RenovationTrack.length - 1) && <View style={styles.detail_container_body_dashedLine} />}
-          {index !== (this.props.RenovationTrack.length - 1) && <View style={styles.detail_container_body_dashedLine_cover} />}
+        {index !== this.props.RenovationTrack.length - 1 && (
+          <View style={styles.detail_container_body_dashedLine} />
+        )}
+        {index !== this.props.RenovationTrack.length - 1 && (
+          <View style={styles.detail_container_body_dashedLine_cover} />
+        )}
         <View style={styles.detail_container_body_content}>
           {item.Content ? (
             <Text style={[styles.detail_container_body_content_time]}>
@@ -37,25 +41,25 @@ export default class RenovationProgress extends Component {
             </Text>
           ) : null}
           <Text style={styles.detail_container_body_content_time}>
-            {dateFormat(item.CreaterTime, "yyyy-MM-dd hh:mm:ss") || " "}
+            {dateFormat(item.CreaterTime, 'yyyy-MM-dd hh:mm:ss') || ' '}
           </Text>
         </View>
       </View>
     </View>
   )
-  
+
   render() {
     return (
       <View>
         <View style={styles.renovation}>
           <View style={styles.renovation_square} />
-          <Text style={styles.renovation_text}>装修进度跟踪</Text>
+          <Text style={styles.renovation_text}>进度跟踪</Text>
         </View>
         <FlatList
           keyboardShouldPersistTaps="always"
           data={this.props.RenovationTrack}
           renderItem={this.renderItem}
-          keyExtractor={(item, index) => index + ""}
+          keyExtractor={(item, index) => index + ''}
         />
       </View>
     )

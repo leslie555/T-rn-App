@@ -12,6 +12,7 @@ const LabelWidget = require('./widgets/LabelWidget')
 const PickerWidget = require('./widgets/PickerWidget')
 const TextAreaWidget = require('./widgets/TextAreaWidget')
 const SwitchWidget = require('./widgets/SwitchWidget')
+const RadioWidget = require('./widgets/RadioWidget')
 const SelectWidget = require('./widgets/SelectWidget')
 const OptionWidget = require('./widgets/OptionWidget')
 const DatePickerWidget = require('./widgets/DatePickerWidget')
@@ -38,6 +39,7 @@ const GiftedForm = createReactClass({
     LabelWidget,
     TextAreaWidget,
     SwitchWidget,
+    RadioWidget,
     SelectWidget,
     OptionWidget,
     DatePickerWidget,

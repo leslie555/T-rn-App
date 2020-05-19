@@ -82,7 +82,6 @@ module.exports = createReactClass({
     }
   },
   _showDatePicker() {
-    if (this.props.disabled) return
     let date = new Date()
     let selectedValue = this._handleDefaulValue(this.state.value[this.idx]) || [
       date.getFullYear() + '年',
@@ -109,10 +108,12 @@ module.exports = createReactClass({
     }
   },
   onPressLeft() {
+    if (this.props.disabled === true || this.props.disabled === 1) return
     this.idx = 0
     this._showDatePicker()
   },
   onPressRight() {
+    if (this.props.disabled === true || this.props.disabled === 2) return
     if (!this.state.value[0] && !this.state.value[1]) {
       this.idx = 0
       this._showDatePicker()
@@ -147,7 +148,16 @@ module.exports = createReactClass({
               style={this.getStyle('alignRight')}
               underlayColor={this.getStyle('underlayColor').pop()}
             >
-              <Text numberOfLines={1} style={[this.getStyle('modalValue'),getStateValue(0)==='请选择'?null:{color:'#333'}]}>
+              <Text
+                numberOfLines={1}
+                style={[
+                  this.getStyle('modalValue'),
+                  getStateValue(0) === '请选择' ? null : { color: '#333' },
+                  this.props.disabled === true || this.props.disabled === 1
+                    ? { color: '#888' }
+                    : null
+                ]}
+              >
                 {getStateValue(0)}
               </Text>
               {this.renderDisclosure()}
@@ -164,7 +174,16 @@ module.exports = createReactClass({
               style={this.getStyle('alignRight')}
               underlayColor={this.getStyle('underlayColor').pop()}
             >
-              <Text numberOfLines={1} style={[this.getStyle('modalValue'),getStateValue(1)==='请选择'?null:{color:'#333'}]}>
+              <Text
+                numberOfLines={1}
+                style={[
+                  this.getStyle('modalValue'),
+                  getStateValue(1) === '请选择' ? null : { color: '#333' },
+                  this.props.disabled === true || this.props.disabled === 2
+                    ? { color: '#888' }
+                    : null
+                ]}
+              >
                 {getStateValue(1)}
               </Text>
             </TouchableOpacity>
@@ -194,7 +213,7 @@ module.exports = createReactClass({
       borderBottomWidth: 1,
       borderColor: '#eee'
     },
-    underlayColor: '#c7c7cc',
+    underlayColor: '#eee',
     row: {
       flexDirection: 'row',
       height: 44,

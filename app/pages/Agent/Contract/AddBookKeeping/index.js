@@ -16,7 +16,7 @@ import {dateFormat} from "../../../../utils/dateFormat";
 class AddBookKeeping extends React.Component {
   constructor(props) {
     super(props)
-    this.numberPad = Platform.OS === 'ios' ? `numbers-and-punctuation`: `number-pad`
+    this.numberPad = Platform.OS === 'ios' ? `numbers-and-punctuation` : `number-pad`
     this.mapKey = {
       children: 'Children',
       label: 'Name',
@@ -39,7 +39,8 @@ class AddBookKeeping extends React.Component {
         ReceivablesDate: '',
         InOrOut: 1,
         BillProjectIDMark: [],
-        Amount: ''
+        Amount: '',
+        RentType: 1
       },
       billProject: [],
       loading: false
@@ -51,8 +52,9 @@ class AddBookKeeping extends React.Component {
     fetchBillData().then(({Data}) => {
       this.setState({
         billProject: Data
+      }, () => {
+        this.initForm()
       })
-      this.initForm()
     })
   }
 
@@ -72,6 +74,7 @@ class AddBookKeeping extends React.Component {
 
   initForm() {
     this.state.form.HouseName = this.editForm.HouseName
+    this.state.form.RentType = this.editForm.RentType
     if (this.editType === 1) {
       debugger
       const pathArr = getTreeNodeByValue(this.state.billProject, this.editForm.BillProjectID, {
@@ -139,7 +142,8 @@ class AddBookKeeping extends React.Component {
             ...this.editForm,
             ...values0,
             BillProjectID: this.currentBillProject.KeyID,
-            BillProjectName: this.currentBillProject.Name
+            BillProjectName: this.currentBillProject.Name,
+            IsEntireHouse: this.busType === 0 ? 1 : this.state.form.RentType === 1 ? 1 : 0
           }]
         }
         this.setState({
@@ -186,6 +190,7 @@ class AddBookKeeping extends React.Component {
         param = {
           ...this.editForm,
           ...values0,
+          IsEntireHouse: this.busType === 0 ? 1 : this.state.form.RentType === 1 ? 1 : 0,
           BillProjectID: this.currentBillProject.KeyID,
           BillProjectName: this.currentBillProject.Name
         }

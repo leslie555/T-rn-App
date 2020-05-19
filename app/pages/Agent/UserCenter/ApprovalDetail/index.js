@@ -14,6 +14,7 @@ export default class ApprovalDetail extends Component {
             content: {},
             List: []
         }
+        this.version = this.props.navigation.state.params.version || 'old'
         this.fetchData = this.fetchData.bind(this)
     }
 
@@ -35,7 +36,7 @@ export default class ApprovalDetail extends Component {
     }
 
     toAudit(item) {
-        this.props.navigation.navigate('AgentConfirmAudit',{id:item.KeyID})
+        this.props.navigation.navigate('AgentConfirmAudit',{id:item.KeyID,version:this.version})
     }
 
     renderProcessItem(item) {

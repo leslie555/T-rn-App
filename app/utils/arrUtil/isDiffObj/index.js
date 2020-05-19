@@ -1,5 +1,5 @@
 /* eslint-disable eqeqeq */
-export default function(compareA = {}, compareB = {}) {
+export default function(compareA = {}, compareB = {}, ignoreArr = []) {
   /*
   *  compareA  {KeyID:1,a:111,b:123} {KeyID:1,a:111,b:123}
   *  compareB  {KeyID:2,a:222,c:456} {KeyID:1,a:111,c:456}
@@ -10,7 +10,7 @@ export default function(compareA = {}, compareB = {}) {
   let flag = false
   for (const key in compareA) {
     if (compareB.hasOwnProperty(key)) {
-      if (compareB[key] != compareA[key]) {
+      if (compareB[key] != compareA[key] && ignoreArr.findIndex(x => x === key) === -1) {
         debugger
         flag = true
         break

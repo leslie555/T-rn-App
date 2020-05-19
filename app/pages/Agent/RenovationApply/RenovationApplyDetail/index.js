@@ -22,6 +22,8 @@ import {
   SubmitRenovationApplication,
   DeleteRenovationApplication,
   WithdrawRenovationApplication,
+  ShowHouseInfoFieldByHousekey,
+  EditHouseWhetherRentOut
 } from "../../../../api/house"
 import { setRenovationDetail } from "../../../../redux/actions/renovationDetail"
 import { getEnumDesByValue } from "../../../../utils/enumData"
@@ -33,6 +35,10 @@ class RenovationApplyDetail extends Component {
     this.state = {
       loading: false,
       HouseKey: "",
+      // 0:不可租 1:可租
+      whetherRentOut: 0,
+      // 是否接口调完
+      titleFinsh: false
     }
     this.options = [
       {
@@ -55,11 +61,11 @@ class RenovationApplyDetail extends Component {
         label: "删除",
         value: "Delete",
       },
+      {
+        label: "是否可租",
+        value: "WhetherRentOut",
+      },
     ]
-    this.isCompanyLeader = this.props.navigation.getParam(
-      "isCompanyLeader",
-      false
-    )
     this.KeyID = this.props.navigation.getParam("KeyID", "")
     this.willFocusSubscription = this.props.navigation.addListener(
       "willFocus",
@@ -89,6 +95,14 @@ class RenovationApplyDetail extends Component {
         const HouseKey = res.Data.ApplyRecord[0].HouseKey || ""
         this.setState({
           HouseKey: HouseKey
+        })
+        // 是否继续可租
+        ShowHouseInfoFieldByHousekey({ HouseKeySum: [HouseKey] }).then(({ Data }) => {
+          const whetherRentOut = Data[0].whetherRentOut
+          this.setState({
+            whetherRentOut,
+            titleFinsh: true
+          })
         })
       }
     })
@@ -121,24 +135,88 @@ class RenovationApplyDetail extends Component {
 
   filterOperation(Status) {
     let Operations = []
-    if (!this.isCompanyLeader) {
-      if (Status === 1) {
-        Operations = this.options.slice(2)
-      } else if (Status === 2 || Status === 3) {
-        Operations.push(this.options[1])
-      }
-    } else if (this.isCompanyLeader) {
-      if (Status === 2) {
-        Operations.push(this.options[0])
-      }
+    if (Status === 1) {
+      Operations = this.options.slice(2)
+    } else if (Status === 2 || Status === 3) {
+      Operations.push(this.options[1])
+      // 新加是否可租
+      Operations.push(this.options[5])
+    } else if (Status !== 6){
+      Operations.push(this.options[5])
     }
     return Operations
+  }
+
+  handleWhetherRentOutClick = () => {
+    if(this.state.titleFinsh) {
+      const title = this.state.whetherRentOut === 0 ? '确认出租' : '确认不出租'
+      Alert.alert("温馨提示", title, [
+        {
+          text: "取消",
+        },
+        {
+          text: "确认",
+          onPress: () => {
+            this.setState({
+              loading: true,
+            })
+            const whetherRentOut = this.state.whetherRentOut === 1 ? 0 : 1
+            const obj = {
+              HouseKey: this.state.HouseKey,
+              Type:1,
+              WhetherRentOut:whetherRentOut,
+              status: whetherRentOut
+            }
+            EditHouseWhetherRentOut(obj)
+              .then((res) => {
+                this.setState(
+                  {
+                    loading: false,
+                  },
+                  () => {
+                      setTimeout(() => {
+                        Alert.alert(
+                          "温馨提示",
+                          "修改成功",
+                          [
+                            {
+                              text: "确认",
+                              onPress: () => {
+                                const whetherRentOut = this.state.whetherRentOut === 0 ? 1 : 0
+                                this.setState({
+                                  whetherRentOut
+                                })
+                              },
+                            },
+                          ],
+                          { cancelable: false }
+                        )
+                      }, 100)
+                    }
+                  )
+              })
+              .catch(() => {
+                this.setState({
+                  loading: false,
+                })
+              })
+          },
+        },
+      ])
+    } else {
+      setTimeout(() => {
+        Alert.alert(
+          "正在努力中",
+          "请稍等..."
+        )
+      }, 100)
+    }
   }
 
   // 按钮监听事件处理函数
   // 删除
 
-  
+
   handleDeleteClick = () => {
     Alert.alert("温馨提示", "确认要删除该装修申请吗", [
       {
@@ -180,7 +258,7 @@ class RenovationApplyDetail extends Component {
                         { cancelable: false }
                       )
                     }, 100)
-                  } 
+                  }
                 )
             })
             .catch(() => {
@@ -309,10 +387,10 @@ class RenovationApplyDetail extends Component {
                   } else {
                       setTimeout(() => {
                         Alert.alert("温馨提示", `撤回失败 ${res.Msg || ""}`)
-                      }, 100)                    
+                      }, 100)
                   }
                 }
-              )                
+              )
             })
             .catch(() => {
               this.setState({
@@ -352,6 +430,7 @@ class RenovationApplyDetail extends Component {
       Status,
       BZ,
     } = this.props.detail.ApplyRecord[0]
+    const whetherRentOut = this.state.whetherRentOut === 0 ? '否' : '是'
     const imageList = this.props.detail.imageList
     const DecorationDetails = this.props.detail.DecorationDetails
     const RenovationTrack = this.props.detail.RenovationTrack
@@ -379,6 +458,13 @@ class RenovationApplyDetail extends Component {
             type="LabelWidget"
             title="钥匙位置"
             value={KeyLocation || " "}
+            required={false}
+            renderRight={false}
+          />
+          <LabelWidget
+            type="LabelWidget"
+            title="是否可租"
+            value={whetherRentOut || " "}
             required={false}
             renderRight={false}
           />
@@ -459,6 +545,7 @@ class RenovationApplyDetail extends Component {
               handleDeleteClick={this.handleDeleteClick}
               handleCommitClick={this.handleCommitClick}
               handleApprovalClick={this.handleApprovalClick}
+              handleWhetherRentOutClick={this.handleWhetherRentOutClick}
             />
           </View>
         )}
@@ -467,5 +554,5 @@ class RenovationApplyDetail extends Component {
   }
 }
 
-const mapStateToPorps = state => ({ detail: state.renovationDetail })
+const mapStateToPorps = state => ({ detail: state.renovationDetail, userinfo: state.user.userinfo })
 export default withNavigation(connect(mapStateToPorps)(RenovationApplyDetail))

@@ -1,23 +1,32 @@
 import React, { Fragment } from 'react'
 import { Button } from 'react-native'
 import {
-  AppGetContractTenantList,
+  AppFindTenantContractListPage,
   AppGetTenantContractNumber
 } from '../../../../api/tenant'
 import {
-  AppGetContractOwnerList,
+  AppFindOwnerContractListPage,
   AppGetOwnerContractNumber
 } from '../../../../api/owner'
-import { List, ListSelector, ListNumberBox } from '../../../../components'
+import {
+  List,
+  AddShopListSelector,
+  ListNumberBox
+} from '../../../../components'
 import ListItem from './ListItem'
+import { getEnumListByKey } from '../../../../utils/enumData'
 
 export default class contractList extends React.Component {
   constructor(props) {
     super(props)
     this.statusKey = props.isOwner ? 'LeaseStatus' : 'RentLeaseStatus'
+    this.EnumStatusList = getEnumListByKey(this.statusKey).map(v => ({
+      title: v.Description,
+      value: v.Value
+    }))
     this.request = props.isOwner
-      ? AppGetContractOwnerList
-      : AppGetContractTenantList
+      ? AppFindOwnerContractListPage
+      : AppFindTenantContractListPage
     this.numberRequest = props.isOwner
       ? AppGetOwnerContractNumber
       : AppGetTenantContractNumber
@@ -32,17 +41,24 @@ export default class contractList extends React.Component {
           Keyword: '',
           // 租约状态
           [this.statusKey]: '',
+          CommunityName: '',
+          HouseNumber: '',
           // 合同类型
           PaperType: '',
           // 审核状态
           AuditStatus: '',
-          // 起止时间
-          EndTime: '',
-          // 开始选择时间
+          // 合同开始时间区域的开始时间
           StartTime: '',
+          // 合同开始时间区域的结束时间
+          EndTime: '',
           // 快速选择
           Timeline: '',
-          QuickScreening: ''
+          QuickScreening: '',
+          // 合同结束时间区域的开始时间
+          EndStartTime: '',
+          // 合同结束时间区域的结束时间
+          EndEndTime: '',
+          FullIDNew: ''
         }
       },
       visible: false,
@@ -63,14 +79,14 @@ export default class contractList extends React.Component {
           type: 'InOfDate',
           label: '合同快到期(30天)',
           value: 0,
-          key: 'QuickSelect',
+          key: 'LeaseStatus',
           color: 'rgb(255,90,90)'
         },
         {
           type: 'OutOfDate',
           label: '合同已到期',
           value: 0,
-          key: 'QuickSelect',
+          key: 'LeaseStatus',
           color: 'rgb(255,90,90)'
         }
       ],
@@ -90,22 +106,7 @@ export default class contractList extends React.Component {
               title: '全部',
               value: ''
             },
-            {
-              title: '暂存',
-              value: 1
-            },
-            {
-              title: '待确认',
-              value: 2
-            },
-            {
-              title: '签约成功',
-              value: 3
-            },
-            {
-              title: '退房结账',
-              value: 4
-            }
+            ...this.EnumStatusList
           ]
         },
         {
@@ -133,7 +134,7 @@ export default class contractList extends React.Component {
         {
           type: 'panel', // 更多筛选组件
           title: '更多筛选',
-          height: 360,
+          height: 400,
           components: [
             {
               type: 'checkbox',
@@ -181,13 +182,17 @@ export default class contractList extends React.Component {
             },
             {
               type: 'datepicker',
-              title: '合同日期'
+              title: '合同开始日期'
+            },
+            {
+              type: 'datepicker',
+              title: '合同结束日期'
             }
           ]
         }
       ]
     }
-    this.ListSelector = null
+    this.AddShopListSelector = null
   }
 
   componentDidMount() {
@@ -226,6 +231,7 @@ export default class contractList extends React.Component {
   }
   handleInOfDateClick = selected => {
     if (selected) {
+      this.AddShopListSelector.manuallySelect(0, 0)
       this.setFormScreen({
         QuickScreening: 1
       })
@@ -237,6 +243,7 @@ export default class contractList extends React.Component {
   }
   handleOutOfDateClick = selected => {
     if (selected) {
+      this.AddShopListSelector.manuallySelect(0, 0)
       this.setFormScreen({
         QuickScreening: 2
       })
@@ -256,16 +263,22 @@ export default class contractList extends React.Component {
           data={this.state.numberBoxConfig}
           handleStoreClick={selected => {
             if (!selected) {
-              this.ListSelector.manuallySelect(0, 0)
+              this.AddShopListSelector.manuallySelect(0, 0)
             } else {
-              this.ListSelector.manuallySelect(0, 1)
+              this.AddShopListSelector.manuallySelect(0, 1)
+              this.setFormScreen({
+                QuickScreening: ''
+              })
             }
           }}
           handleConfirmClick={selected => {
             if (!selected) {
-              this.ListSelector.manuallySelect(0, 0)
+              this.AddShopListSelector.manuallySelect(0, 0)
             } else {
-              this.ListSelector.manuallySelect(0, 2)
+              this.AddShopListSelector.manuallySelect(0, 2)
+              this.setFormScreen({
+                QuickScreening: ''
+              })
             }
           }}
           handleInOfDateClick={this.handleInOfDateClick}
@@ -289,11 +302,9 @@ export default class contractList extends React.Component {
     switch (index) {
       case 0:
         form.screen[this.statusKey] = data.value
-        this.setState({ form })
         break
       case 1:
         form.screen.PaperType = data.value
-        this.setState({ form })
         break
       case 2:
         data.forEach((item, index) => {
@@ -313,18 +324,26 @@ export default class contractList extends React.Component {
               form.screen.StartTime = item.data.startTime
               form.screen.EndTime = item.data.endTime
               break
+            case 3:
+              form.screen.EndStartTime = item.data.startTime
+              form.screen.EndEndTime = item.data.endTime
+              break
           }
         })
-        this.setState({ form })
         break
-      default:
+      case 3:
+        form.screen.FullIDNew = data.FullID
         break
     }
+    this.setState({ form })
   }
   render() {
     return (
-      <ListSelector
-        ref={ListSelector => (this.ListSelector = ListSelector)}
+      <AddShopListSelector
+        ref={AddShopListSelector => {
+          this.AddShopListSelector = AddShopListSelector
+        }}
+        selectShop={1}
         config={this.state.listConfig}
         onSelectMenu={this.onSelectMenu}
         renderContent={this.renderContent}

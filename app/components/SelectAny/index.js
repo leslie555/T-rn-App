@@ -13,7 +13,7 @@ import {
 } from 'react-native'
 import {withNavigation} from 'react-navigation'
 import {EmptyList, Header, ListFooterComponent, ListLoading, SearchBar} from '../../components'
-import {searchHouseList, ShowMCommunityInfo} from '../../api/house'
+import {searchHouseList, ShowMCommunityInfo,ShowStreetByCityCodeList} from '../../api/house'
 import {getAllSmallCompany, getEmployeeInfoList} from '../../api/system'
 import PropTypes from "prop-types";
 import {CommonColor, DisplayStyle} from '../../styles/commonStyles'
@@ -35,6 +35,9 @@ class SelectAny extends Component {
       size: 15
     }
     this.apiFn = this.getApiFn()
+    if (this.props.emptyRender) {
+      this.getList()
+    }
   }
 
   static defaultProps = {
@@ -47,11 +50,12 @@ class SelectAny extends Component {
     placeholder: '',
     leftLabel: '',
     rightLabel: '',
-    lightFirstLine: false
+    lightFirstLine: false,
+    emptyRender: false
   }
 
   static propTypes = {
-    // 1：房源  2：小区  3：员工 4: 共享房源所有分店
+    // 1：房源  2：小区  3：员工 4: 共享房源所有分店 5：街道
     apiType: PropTypes.number.isRequired, // 对应的业务，由于这里是页面组件 所以需要单独引入接口
     searchKey: PropTypes.string, // 关键字对应的字段
     extraParam: PropTypes.object, // 额外的参数
@@ -64,7 +68,8 @@ class SelectAny extends Component {
     rightLabel: PropTypes.string, // 右侧侧显示的字段名,
     lightFirstLine: PropTypes.bool, // 是否高亮第一行
     path: PropTypes.string.isRequired, // 完成后返回的路由
-    returnKey: PropTypes.string.isRequired // 完成后返回的key
+    returnKey: PropTypes.string.isRequired, // 完成后返回的key
+    emptyRender: PropTypes.bool // 是否空字符串搜索渲染
   }
 
   getApiFn() {
@@ -77,6 +82,8 @@ class SelectAny extends Component {
         return getEmployeeInfoList
       case 4:
         return getAllSmallCompany
+      case 5:
+        return ShowStreetByCityCodeList
     }
   }
 
@@ -107,7 +114,7 @@ class SelectAny extends Component {
   }
 
   getList(type = 0) {
-    if(!this.text){
+    if(!this.text && !this.props.emptyRender){
       this.setState({
         list: [],
         listLoading: false,
@@ -136,7 +143,7 @@ class SelectAny extends Component {
       if (this.props.isPaging) {
         let list = Data.rows
         if (type === 1) {
-          list = this.state.list.push(...list)
+          list = [...this.state.list,...list]
         }
         if (Data.records === list.length) {
           this.state.isAllShow = true
@@ -244,6 +251,7 @@ class SelectAny extends Component {
                     <ListFooterComponent
                         list={this.state.list}
                         isAll={this.state.isAllShow}
+                        finishText={!this.props.isPaging?'没搜到？请输入的更精确一些':'--已加载全部--'}
                     />
                   }
                   keyExtractor={(item, index) => {

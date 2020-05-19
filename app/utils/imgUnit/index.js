@@ -1,7 +1,7 @@
 import { baseImgURL } from '../../config/index'
 import saveImage from './saveImage'
 
-const getThumbImgUrl = function(url = '', options = { w: 200 }) {
+const getThumbImgUrl = function(url = '', options = { w: 400 }) {
   url = getImgUrl(url)
   if (url.indexOf('x-oss-process=image')) {
     url = url.split('?')[0]

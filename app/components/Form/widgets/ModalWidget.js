@@ -328,7 +328,7 @@ module.exports = createReactClass({
       borderBottomWidth: 1,
       borderColor: '#eee'
     },
-    underlayColor: '#c7c7cc',
+    underlayColor: '#eee',
     row: {
       flexDirection: 'row',
       height: 44,

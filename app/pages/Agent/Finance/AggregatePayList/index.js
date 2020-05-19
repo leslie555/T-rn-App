@@ -73,6 +73,8 @@ class AggregatePayList extends Component {
     }
     this.togglePayBill = this.togglePayBill.bind(this)
     this.toDetail = this.toDetail.bind(this)
+    // 有部分收数据
+    this.hasPartReceived = 0
     // this.countTotalMoney = this.countTotalMoney.bind(this)
   }
 
@@ -115,50 +117,125 @@ class AggregatePayList extends Component {
     this.state.form.KeyWord = val
     this.state.form.pageParam.page = 1
     this.setState({
-      form: { ...this.state.form }
+      form: { ...this.state.form },
+      totalMount: 0,
+      billIds: [],
+      HouseID: ''
     })
   }
 
-  // 勾选要支付的账单
+  // 勾选要支付的账单(部分收账单只能选择一个)
   togglePayBill(item) {
-    const hasItem = this.state.billIds.includes(item.KeyID)
+    const billIndex = this.state.billIds.indexOf(item.KeyID)
     const billIds = [...this.state.billIds]
+    const num = billIds.length
     let { HouseID, totalMount } = this.state
-    // 如果是未勾选状态变为勾选状态
-    if (!hasItem) {
-      // 判断是否已有勾选数据
-      if (this.state.billIds && this.state.billIds.length > 0) {
-        // 有则判断是否和已有勾选数据属于同一房源
-        if (item.HouseID != this.state.HouseID) {
-          Toast.show('请选择同一房源！', {
-            duration: Toast.durations.SHORT,
-            position: Toast.positions.CENTER
-          })
+    // 判断当前点的选项是否已经勾选
+    if (billIndex === -1) {
+      // 判断是否和已勾选数据是同一套房源
+      if (HouseID && HouseID !== item.HouseID) {
+        this.showToast(0)
+        return
+      }
+      // 判断是否有部分收选项已勾选
+      if (this.hasPartReceived === 1) {
+        this.showToast(1)
+        return
+      }
+      HouseID = item.HouseID
+      if (num === 0) { // 如果没选任何账单判断所选账单是否是部分收
+        if (item.UnPaidMoney > 0 && item.PaidMoney > 0) {
+          this.hasPartReceived = 1
+        }
+      } else  {
+        if (item.UnPaidMoney > 0 && item.PaidMoney > 0) {
+          this.showToast(1)
           return
         }
       }
-      totalMount = priceFormat(+totalMount + +item.ReceivableMoney)
       billIds.push(item.KeyID)
-      // 没有则设置HouseID
-      HouseID = item.HouseID
+      totalMount = priceFormat(+totalMount + +item.ReceivableMoney)
     } else {
-      // 如果是勾选状态变为未勾选状态
-      totalMount = priceFormat(+totalMount - +item.ReceivableMoney)
-      const idx = billIds.findIndex(v => v === item.KeyID)
-      billIds.splice(idx, 1)
-      //判断该数据是否为最后一个勾选的数据，如果是，则重置HouseID
-      if (this.state.billIds && this.state.billIds.length == 1) {
+      if (num === 1) {
         HouseID = ''
+        this.hasPartReceived = 0
       }
+      billIds.splice(billIndex, 1)
+      totalMount = priceFormat(+totalMount - +item.ReceivableMoney)
     }
     this.setState({
       billIds,
       HouseID,
       totalMount
     })
+    // const hasItem = this.state.billIds.includes(item.KeyID)
+    // const billIds = [...this.state.billIds]
+    // let { HouseID, totalMount } = this.state
+    // // 如果是未勾选状态变为勾选状态
+    // if (!hasItem) {
+    //   // 判断是否已有勾选数据
+    //   if (this.state.billIds && this.state.billIds.length > 0) {
+    //     // 判断如果是部分收 则不能一起勾选
+    //     if ((item.UnPaidMoney > 0 && item.PaidMoney > 0) || (this.hasPartReceived === 1)) {
+    //       Toast.show('部分收只能单选, 不能和其他的一起支付', {
+    //         duration: Toast.durations.SHORT,
+    //         position: Toast.positions.CENTER
+    //       })
+    //       this.hasPartReceived = 1
+    //       return 
+    //     }
+    //     // 有则判断是否和已有勾选数据属于同一房源
+    //     if (item.HouseID != this.state.HouseID) {
+    //       Toast.show('请选择同一房源！', {
+    //         duration: Toast.durations.SHORT,
+    //         position: Toast.positions.CENTER
+    //       })
+    //       return
+    //     }
+    //   } else if(item.UnPaidMoney > 0 && item.PaidMoney > 0) {
+    //     this.hasPartReceived = 1
+    //   }
+    //   totalMount = priceFormat(+totalMount + +item.ReceivableMoney)
+    //   billIds.push(item.KeyID)
+    //   // 没有则设置HouseID
+    //   HouseID = item.HouseID
+    // } else {
+    //   // 如果是勾选状态变为未勾选状态
+    //   totalMount = priceFormat(+totalMount - +item.ReceivableMoney)
+    //   const idx = billIds.findIndex(v => v === item.KeyID)
+    //   billIds.splice(idx, 1)
+    //   if (this.hasPartReceived === 1) {
+    //     this.hasPartReceived = 0
+    //   }
+    //   //判断该数据是否为最后一个勾选的数据，如果是，则重置HouseID
+    //   if (this.state.billIds && this.state.billIds.length == 1) {
+    //     HouseID = ''
+    //   }
+    // }
+    // this.setState({
+    //   billIds,
+    //   HouseID,
+    //   totalMount
+    // })
     // this.countTotalMoney()
   }
 
+  showToast(type) {
+    console.log(type)
+    let msg = ''
+    switch (type) {
+      case 0:
+        msg = '请选择同一房源！'
+        break
+      case 1:
+        msg = '部分收只能单选, 不能和其他的一起支付!'
+        break
+    }
+    Toast.show(msg, {
+      duration: Toast.durations.SHORT,
+      position: Toast.positions.CENTER
+    })
+  }
   /*     // 计算总金额
     countTotalMoney() {
         let totalMount = 0

@@ -1,5 +1,9 @@
-import {StyleSheet} from "react-native";
-import {_1PX, DEVICE_WIDTH, DisplayStyle} from '../../../../styles/commonStyles'
+import { StyleSheet } from 'react-native'
+import {
+  _1PX,
+  DEVICE_WIDTH,
+  DisplayStyle
+} from '../../../../styles/commonStyles'
 
 export default StyleSheet.create({
   owner_content: {
@@ -10,7 +14,7 @@ export default StyleSheet.create({
   },
   owner_header_right_text: {
     fontSize: 14,
-    color: "#fff"
+    color: '#fff'
   },
   add_owner_btn_box: {
     ...DisplayStyle('row', 'center', 'center'),
@@ -49,5 +53,43 @@ export default StyleSheet.create({
   viewPlaceholder: {
     height: 20,
     width: DEVICE_WIDTH
+  },
+  fast_change_time_box: {
+    ...DisplayStyle('row', 'center', 'flex-start')
+  },
+  fast_change_time_box_item: {
+    ...DisplayStyle('row', 'center', 'center'),
+    width: 60,
+    height: 24,
+    backgroundColor: '#389ef2',
+    marginLeft: 8,
+    borderRadius: 6
+  },
+  tipCircleContainer: {
+    width: 14,
+    height: 14,
+    position: 'absolute',
+    top: 8,
+    left: 175,
+    borderColor: '#ccc',
+    borderWidth: _1PX,
+    borderRadius: 7,
+    ...DisplayStyle('row', 'center', 'center')
+  },
+  tipQuestion: {
+    fontSize: 10,
+    color: '#999',
+    fontWeight: 'bold'
+  },
+  step_notice: {
+    ...DisplayStyle('row','center','flex-start'),
+    backgroundColor: '#fdfceb',
+    height: 40,
+    paddingLeft: 15
+  },
+  step_notice_text: {
+    fontSize: 12,
+    marginLeft: 10,
+    color: '#f76f22'
   }
 })

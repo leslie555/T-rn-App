@@ -32,6 +32,14 @@ export default class DrawerBox extends React.Component {
           label: "保洁列表",
           isShow: true,
         },
+        {
+          icon: require("./images/cleaning.png"),
+          isImage: true,
+          router: "AgentMoveApplyList",
+          // extendParam: {busType: 1},
+          label: "搬家列表",
+          isShow: true,
+        },
       ],
     }
   }

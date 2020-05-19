@@ -63,7 +63,7 @@ module.exports = createReactClass({
       height: 44,
       alignItems: 'center',
     },
-    underlayColor: '#c7c7cc',
+    underlayColor: '#eee',
     disclosure: {
       transform: [{rotate: '-90deg'}],
       marginLeft: 10,

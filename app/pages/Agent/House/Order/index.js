@@ -4,7 +4,7 @@ import { View, TouchableOpacity } from 'react-native'
 import { GetOderList } from '../../../../api/tenant'
 import { SearchBar } from '../../../../components'
 import { Container } from '../../../../styles/commonStyles'
-import { List, ListSelector, Header } from '../../../../components/index'
+import { List, AddShopListSelector, Header } from '../../../../components/index'
 import IconFont from '../../../../utils/IconFont'
 
 export default class Order extends React.Component {
@@ -22,7 +22,8 @@ export default class Order extends React.Component {
         EndTime: '',
         HouseName: '',
         OrderStatus: 0,
-        StartTime: ''
+        StartTime: '',
+        FullIDNew: ''
       },
       listConfig: [
         {
@@ -68,6 +69,20 @@ export default class Order extends React.Component {
         }
       ]
     }
+  }
+  componentDidMount() {
+    this.viewDidAppear = this.props.navigation.addListener('didFocus', obj => {
+      if (!obj.state.params) {
+        return
+      } else {
+        if (obj.state.params.isRefresh) {
+          this.setState({
+            form: { ...this.state.form }
+          })
+          obj.state.params.isRefresh = false
+        }
+      }
+    })
   }
 
   showSearch = () => {
@@ -135,7 +150,8 @@ export default class Order extends React.Component {
               break
           }
         })
-      default:
+      case 2:
+        form.FullIDNew = data.FullID
         break
     }
     this.setState({ form })
@@ -160,8 +176,11 @@ export default class Order extends React.Component {
             />
           )}
         </Header>
-        <ListSelector
-          ref={ListSelector => (this.ListSelector = ListSelector)}
+        <AddShopListSelector
+          ref={AddShopListSelector => {
+            this.AddShopListSelector = AddShopListSelector
+          }}
+          selectShop={1}
           config={this.state.listConfig}
           onSelectMenu={this.onSelectMenu}
           renderContent={this.renderContent}

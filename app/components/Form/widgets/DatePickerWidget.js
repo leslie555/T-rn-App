@@ -137,7 +137,14 @@ module.exports = createReactClass({
             {this.props.title}
           </Text>
           <View style={this.getStyle('alignRight')}>
-            <Text numberOfLines={1} style={[this.getStyle('modalValue'),this.state.value?{color:'#333'}:null]}>
+            <Text
+              numberOfLines={1}
+              style={[
+                this.getStyle('modalValue'),
+                this.state.value ? { color: '#333' } : null,
+                this.props.disabled ? { color: '#888' } : null
+              ]}
+            >
               {this.state.value || '请选择'}
             </Text>
           </View>
@@ -175,7 +182,7 @@ module.exports = createReactClass({
       borderBottomWidth: 1,
       borderColor: '#eee'
     },
-    underlayColor: '#c7c7cc',
+    underlayColor: '#eee',
     row: {
       flexDirection: 'row',
       height: 44,

@@ -94,7 +94,7 @@ const style = StyleSheet.create({
   },
   detail_content_price_num: {
     marginRight: 5,
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: '600',
     color: '#FCB144'
   },
@@ -151,6 +151,10 @@ const style = StyleSheet.create({
   detail_content_address: {
     ...DisplayStyle('row', 'center', 'flex-start')
   },
+  detail_content_time: {
+    ...DisplayStyle('row', 'center', 'flex-start'),
+    marginBottom: 7
+  },
   // 付款方式
   detail_content_payType: {
     paddingTop: 15,
@@ -174,7 +178,7 @@ const style = StyleSheet.create({
     paddingBottom: 0,
     marginBottom: 20,
     backgroundColor: CommonColor.color_white,
-    ...DisplayStyle('column', 'center', 'flex-start')
+    ...DisplayStyle('column', 'flex-start', 'flex-start')
   },
   detail_room_num_left: {
     width: width - 30,
@@ -316,6 +320,22 @@ const style = StyleSheet.create({
   },
   detail_order_placeholder:{
     color: '#fff'
+  },
+  detail_renew: {
+    ...DisplayStyle('row', 'flex-start', 'flex-start'),
+    height: 40,
+  },
+  detail_renew_text1: {
+    marginRight: 15,
+    marginLeft: 8
+  },
+  detail_renew_text2: {
+    marginRight: 5
+  },
+  detail_renew_img: {
+    width: 15,
+    height: 15,
+    marginTop: 2
   }
 })
 

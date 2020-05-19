@@ -40,9 +40,11 @@ class AddBookKeeping extends React.Component {
         HouseName: '',
         HouseID: '',
         HouseKey: '',
+        RentType: 1,
         ReceivablesDate: '',
         InOrOut: this.query.busType,
         BillProjectIDMark: [],
+        IsEntireHouse: false,
         Amount: '',
         ImageUpload: [],
         VoucherID: '',
@@ -68,8 +70,9 @@ class AddBookKeeping extends React.Component {
     fetchBillData().then(({Data}) => {
       this.setState({
         billProject: Data
+      },()=>{
+        this.initForm()
       })
-      this.initForm()
     })
   }
 
@@ -99,7 +102,8 @@ class AddBookKeeping extends React.Component {
       this.state.form.ReceivablesDate = dateFormat(this.editForm.ReceivablesDate)
       this.state.form.BillProjectIDMark = pathArr
       this.state.form.ImageUpload = deepCopy(this.editForm.ImageUpload || [])
-      this.state.form.IsHouse = this.editForm === 1
+      this.state.form.IsHouse = !!this.editForm.HouseID
+      this.state.form.IsEntireHouse = this.editForm.IsEntireHouse === 1
       this.currentBillProject = {
         KeyID: this.editForm.BillProjectID,
         Name: this.editForm.BillProjectName,
@@ -136,10 +140,20 @@ class AddBookKeeping extends React.Component {
         })
         return
       }
+      debugger
+      let IsEntireHouse = 0
+      if (!this.state.form.IsHouse) {
+        IsEntireHouse = 0
+      } else if (this.state.form.RentType === 1) {
+        IsEntireHouse = 1
+      }else {
+        IsEntireHouse = values0.IsEntireHouse ? 1 : 0
+      }
       const bookKeepPara = {
         ...this.state.form,
         ...values0,
         IsHouse: this.state.form.IsHouse ? 1 : 0,
+        IsEntireHouse,
         BillProjectID: this.currentBillProject.KeyID,
         BillProjectName: this.currentBillProject.Name
       }
@@ -221,6 +235,7 @@ class AddBookKeeping extends React.Component {
     this.state.form.HouseName = item.HouseName
     this.state.form.HouseID = item.KeyID
     this.state.form.HouseKey = item.HouseKey
+    this.state.form.RentType = item.RentType
     this.setState({
       form: this.state.form
     })
@@ -295,6 +310,13 @@ class AddBookKeeping extends React.Component {
                   this.billProjectChange(data)
                 }}
             />
+            {form.IsHouse&&form.RentType===2&&<GiftedForm.SwitchWidget
+                name='IsEntireHouse'
+                title='是否记为整套房'
+                required={false}
+                disabled={this.editType === 1}
+                value={form.IsEntireHouse}
+            />}
             <GiftedForm.TextInputWidget
                 name='Amount'
                 title='金额'

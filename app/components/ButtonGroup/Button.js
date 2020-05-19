@@ -13,48 +13,62 @@ export default class Button extends Component {
     isLoading: false,
     isDisabled: false,
     title: '',
-    hasIcon: true,
+    isIconContainer: true,
     color: CommonColor.color_primary,
-    iconName: 'checkout',
+    iconName: '',
     fontSize: 15
   }
   render() {
+    const {
+      isIconContainer,
+      btnStyle,
+      isLoading,
+      isDisabled,
+      activityIndicatorColor,
+      onPress,
+      iconName,
+      fontSize,
+      color,
+      imgSource,
+      title
+    } = this.props
     return (
       <ApslButton
         style={{
           ...style.btn,
-          ...this.props.btnStyle
+          ...btnStyle
         }}
         textStyle={style.detail_page_btn_text}
         disabledStyle={{ opacity: 0.5 }}
-        isLoading={this.props.isLoading}
-        isDisabled={this.props.isDisabled}
-        activityIndicatorColor={this.props.activityIndicatorColor}
-        onPress={this.props.onPress}
+        isLoading={isLoading}
+        isDisabled={isDisabled}
+        activityIndicatorColor={activityIndicatorColor}
+        onPress={onPress}
       >
-        {this.props.hasIcon ? (
+        {isIconContainer ? (
           <View style={style.iconContainer}>
-            <IconFont
-              name={this.props.iconName}
-              size={this.props.fontSize}
-              color={this.props.color}
-            />
+            {iconName ? (
+              <IconFont name={iconName} size={fontSize} color={color} />
+            ) : (
+              <Image
+                source={imgSource}
+                style={{
+                  marginBottom: btnStyle.marginBottom
+                }}
+              />
+            )}
             <Text
-              style={{ color: this.props.color, marginTop: 2, fontSize: 12 }}
+              style={{
+                color: color,
+                marginTop: 2,
+                fontSize: 12
+              }}
             >
-              {this.props.title}
+              {title}
             </Text>
           </View>
-        ) : this.props.hasImage ? (
-          <View style={style.iconContainer}>
-            <Image
-              source={this.props.require}
-              style={{ marginBottom: this.props.btnStyle.marginBottom }}
-            />
-            <Text style={{ color: this.props.color }}>{this.props.title}</Text>
-          </View>
         ) : (
-          this.props.title
+          title
         )}
       </ApslButton>
     )

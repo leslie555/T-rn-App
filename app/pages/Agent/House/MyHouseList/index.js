@@ -4,12 +4,13 @@ import IconFont from '../../../../utils/IconFont'
 import {findNodeByArr} from '../../../../utils/arrUtil'
 import {Text, TouchableOpacity, View} from 'react-native'
 import {Container} from '../../../../styles/commonStyles'
-import {FullModal, Header, List, ListNumberBox, ListSelector, SearchBar} from '../../../../components'
+import {FullModal, Header, List, ListNumberBox, AddShopListSelector, SearchBar} from '../../../../components'
 import CityData from '../../../../utils/Picker/areaData/cityData'
 import ListItem from './ListItem'
 import rootBackHandle from "../../../../utils/rootBackHandle";
+import { connect } from 'react-redux'
 
-export default class MyHouseList extends React.Component {
+class MyHouseList extends React.Component {
   constructor(props) {
     super(props)
     this.searchRef = null
@@ -26,9 +27,9 @@ export default class MyHouseList extends React.Component {
         HouseStatus: '全部', // 房源状态 ['全部', '待完善', '待租', '已定', '已租', '装修']
         IsHavephotos: '全部', /// 是否有照片: 全部;无照片;有照片
         AuditState: '全部', /// 审核状态:全部;待审核;已通过
-        RentMoeny: '全部',  /// 价格  值: 全部;500-1000;1000-1500;1500-2000;2000以上
+        RentMoeny: '全部',  /// 价格  值: 全部;500-1000;1000-1500;1500-2000;2000-3000;3000以上
         RoomType: '全部', /// 户型  值： 全部,X,1,2,3,4
-        FullID: '' /// 门店全路径查询
+        FullIDNew: '', /// 区域全路径查询,
       },
       listConfig: [
         {
@@ -148,10 +149,14 @@ export default class MyHouseList extends React.Component {
                 {
                   title: '1500-2000',
                   value: '1500-2000'
+                },,
+                {
+                  title: '2000-3000',
+                  value: '2000-3000'
                 },
                 {
-                  title: '2000以上',
-                  value: '2000以上'
+                  title: '3000以上',
+                  value: '3000以上'
                 }
               ]
             },
@@ -196,13 +201,35 @@ export default class MyHouseList extends React.Component {
           value: 0
         },
         {
-          key: 1,
+          key: 0,
           type: 'Audit',
           label: '待审核',
           value: 0,
         }
       ],
       isPageReady: false
+    }
+    // config 处理
+    if(this.props.shopList.length > 0){
+      this.state.listConfig[3].components.unshift({
+        type: 'checkbox',
+        title: '出租方式',
+        data: [
+          {
+            title: '全部',
+            value: '全部'
+          },
+          {
+            title: '整租',
+            value: '1'
+          },
+          {
+            title: '合租',
+            value: '2'
+          }
+        ]
+      },)
+      this.state.listConfig.splice(1,1)
     }
     this.viewWillFocus = this.props.navigation.addListener(
         'willFocus',
@@ -274,8 +301,10 @@ export default class MyHouseList extends React.Component {
               data={this.state.numberBoxConfig}
               handleRentClick={(flag) => {
                 this.fastSearch(2, flag ? 1 : 0)
+                this.fastSearch(3, 1, flag ? null : 1)
               }}
               handleAuditClick={(flag) => {
+                this.fastSearch(2, flag ? 0 : 1)
                 this.fastSearch(3, 1, flag ? 1 : null)
               }}
           />
@@ -284,8 +313,8 @@ export default class MyHouseList extends React.Component {
               form={this.state.form}
               setForm={form => this.setState({form})}
               listKey={'AgentMyHouseList'}
-              primaryKey={'HouseName'}
               renderItem={renderItem}
+              requestFirst={false}
               onRefresh={()=>{
                 this.getNumber()
               }}
@@ -295,6 +324,7 @@ export default class MyHouseList extends React.Component {
   }
 
   onSelectMenu(index, subindex, data) {
+    const num = this.props.shopList.length === 0 ? 0 : 1
     const form = {...this.state.form}
     form.parm.page = 1
     switch (index) {
@@ -302,15 +332,15 @@ export default class MyHouseList extends React.Component {
         form.CityCode = data.value
         this.setState({form})
         break
-      case 1:
+      case 1-num:
         form.RentType = data.value
         this.setState({form})
         break
-      case 2:
+      case 2-num:
         form.HouseStatus = data.value
         this.setState({form})
         break
-      case 3:
+      case 3-num:
         data.forEach((item, index) => {
           if (!item.data) {
             item.data = {
@@ -318,23 +348,31 @@ export default class MyHouseList extends React.Component {
             }
           }
           switch (index) {
-            case 0:
+            case 0+num:
               form.IsHavephotos = item.data.value
               break
-            case 1:
+            case 0:
+              form.RentType = item.data.value
+              break
+            case 1+num:
               form.AuditState = item.data.value
               break
-            case 2:
+            case 2+num:
               form.RentMoeny = item.data.value
               break
-            case 3:
+            case 3+num:
               form.RoomType = item.data.value
               break
           }
         })
         this.setState({form})
         break
+      case 3:
+        form.FullIDNew = data.FullID || ''
+        this.setState({form})
+        break
       default:
+        this.setState({form})
         break
     }
   }
@@ -358,7 +396,6 @@ export default class MyHouseList extends React.Component {
   }
 
   fastSearch(index, subIndex, panelIndex = 0) {
-    debugger
     this.searchRef.manuallySelect(index, subIndex, panelIndex)
   }
 
@@ -371,7 +408,7 @@ export default class MyHouseList extends React.Component {
               hideLeft
               headerRight={
                 <TouchableOpacity onPress={() => {
-                  this.searchRef.manuallyHide()
+                  this.searchRef && this.searchRef.manuallyHide()
                   this.toggleSearchBar()
                 }}>
                   <IconFont name='search' size={20} color='white'/>
@@ -394,10 +431,11 @@ export default class MyHouseList extends React.Component {
             />}
           </Header>
           {this.state.isPageReady &&
-          <ListSelector
+          <AddShopListSelector
               ref={(ref) => {
                 this.searchRef = ref
               }}
+              selectShop={2}
               config={this.state.listConfig}
               onSelectMenu={this.onSelectMenu.bind(this)}
               renderContent={this.renderContent.bind(this)}
@@ -407,3 +445,9 @@ export default class MyHouseList extends React.Component {
     )
   }
 }
+const mapToProps = state => {
+  return {
+    shopList: state.account.ShopListSelector || []
+  }
+}
+export default connect(mapToProps)(MyHouseList)

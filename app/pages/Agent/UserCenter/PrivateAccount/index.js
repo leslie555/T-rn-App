@@ -1,10 +1,18 @@
-import React from 'react';
-import {Button, Image, Text, TouchableOpacity, View} from 'react-native';
+import React from 'react'
+import {
+  Button,
+  Image,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native'
 import styles from './style'
-import IconFont from "../../../../utils/IconFont";
-import {Header} from "../../../../components";
+import IconFont from '../../../../utils/IconFont'
+import { Header } from '../../../../components'
+import { connect } from 'react-redux'
 
-export default class DrawerBox extends React.Component {
+class PrivateAccount extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
@@ -80,37 +88,104 @@ export default class DrawerBox extends React.Component {
           router: 'AgentIncomeOrExpendAccount',
           label: '支出记账',
           isShow: true
+        },
+        {
+          icon: require('../../BossKey/HomePage/images/relieveCon.png'),
+          router: 'AgentContractRemoveAgree',
+          label: '合同解除同意书',
+          isShow: true,
+          width: 16,
+          height: 15,
+          isImage: true,
+        },
+        {
+          icon: require('../../BossKey/HomePage/images/agreeCon.png'),
+          router: 'AgentAgreeFreeStatement',
+          width: 16,
+          height: 15,
+          label: '同意免租声明书',
+          isShow: true,
+          isImage: true,
+        },
+        {
+          icon: require('./images/writeoff.png'),
+          isImage: true,
+          width: 16,
+          height: 15,
+          // icon: 'zhichujizhang',
+          router: 'AgentWriteOff',
+          label: '费用报销',
+          isShow: true
+        },
+        {
+          icon: require('../../BossKey/HomePage/images/zujinchapaihangbang.png'),
+          isImage: true,
+          router: 'BossKeyRentPrice',
+          label: '租金差排行榜',
+          width: 16,
+          height: 15,
+          isShow: false
         }
       ]
     }
+    if (this.props.userInfo.Lv === 4) {
+      this.state.routeList[12].isShow = true
+    }
   }
 
-  componentDidMount() {
+  componentDidMount() {}
 
+  goPage(routeName, label) {
+    if (routeName === 'BossKeyRentPrice') {
+      this.props.navigation.navigate(routeName, {
+        type: 'Agent'
+      })
+    } else {
+      this.props.navigation.navigate(routeName, { label: label })
+    }
   }
 
-  goPage(routeName,label) {
-    this.props.navigation.navigate(routeName,{label:label})
-  }
   render() {
     return (
-        <View style={styles.container}>
-          <Header title="个人账户" />
+      <View style={styles.container}>
+        <Header title="个人账户" />
+        <ScrollView>
           <View style={styles.btn_box}>
-            {this.state.routeList.map((item,index)=>{
+            {this.state.routeList.map((item, index) => {
+              if (!item.isShow) return null
               return (
-                  <TouchableOpacity style={[styles.btn_box_item,index%2===1?styles.btn_box_item_ml:null]} key={index} onPress={()=>{
-                    this.goPage(item.router,item.label)
-                  }}>
-                    <View style={styles.btn_box_item_icon}>
-                      <IconFont size={20} color='#fff' name={item.icon} />
-                    </View>
-                    <Text style={styles.btn_box_item_text}>{item.label}</Text>
-                  </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.btn_box_item,
+                    index % 2 === 1 ? styles.btn_box_item_ml : null
+                  ]}
+                  key={index}
+                  onPress={() => {
+                    this.goPage(item.router, item.label)
+                  }}
+                >
+                  <View style={styles.btn_box_item_icon}>
+                    {item.isImage ? (
+                      <Image
+                        source={item.icon}
+                        style={{ width: item.width, height: item.height }}
+                      />
+                    ) : (
+                      <IconFont size={20} color="#fff" name={item.icon} />
+                    )}
+                  </View>
+                  <Text style={styles.btn_box_item_text}>{item.label}</Text>
+                </TouchableOpacity>
               )
             })}
           </View>
-        </View>
-    );
+        </ScrollView>
+      </View>
+    )
   }
 }
+
+const mapToProps = state => ({
+  userInfo: state.user.userinfo
+})
+export default connect(mapToProps)(PrivateAccount)

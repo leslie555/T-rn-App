@@ -14,20 +14,29 @@ import {
 import {CommonColor, Container, DisplayStyle} from '../../../../styles/commonStyles';
 import IconFont from "../../../../utils/IconFont";
 import Swiper from 'react-native-swiper';
-import Picker from 'react-native-picker';
 import style from './style';
 import Placeholder from 'rn-placeholder';
 import Toast from 'react-native-root-toast';
 import Spinner from 'react-native-spinkit';
-import {addEnshrine, delEnshrine, selectMyHouseDetail, selectShareHouseDetail} from '../../../../api/house'
-import {getImgUrl, getThumbImgUrl} from '../../../../utils/imgUnit/index'
-import {ButtonGroup, Header, ImageViewer, Share} from '../../../../components'
+import {
+  addEnshrine,
+  delEnshrine,
+  EditHouseWhetherRentOut,
+  FindHouseWhetherRentOut,
+  selectMyHouseDetail,
+  selectShareHouseDetail
+} from '../../../../api/house'
+import {ShowBossKeyShareHouseInfoByID} from '../../../../api/bossKey'
+import {getThumbImgUrl} from '../../../../utils/imgUnit/index'
+import {ButtonGroup, Header, ImageViewer, Picker, Share, AliImage} from '../../../../components'
 import {webpageUrl} from '../../../../config/index'
 import {connect} from "react-redux";
-import {GetHouseBadgeInfo,CancelOrderInfo} from "../../../../api/tenant";
+import {CancelOrderInfo, GetHouseBadgeInfo} from "../../../../api/tenant";
 import {dateFormat} from "../../../../utils/dateFormat";
+import {getButtons} from "../../../../utils/buttonPermission";
 import {updateList} from "../../../../redux/actions/list";
 import {getEnumDesByValue} from "../../../../utils/enumData";
+import NearHouse from "./components/NearHouse";
 
 const {width, height} = Dimensions.get('window');
 
@@ -35,6 +44,7 @@ class ShareHouseDetail extends Component {
   constructor(props) {
     super(props)
     this.query = this.props.navigation.state.params || {}
+    this.IsBoss = !!this.query.IsBoss
     this.state = {
       overHidden: true,
       isChange: true,
@@ -105,7 +115,10 @@ class ShareHouseDetail extends Component {
           isExist: false
         }
       ],
-      buttonGroup: []
+      buttonGroup: [],
+      RenewList: [],
+      renewVisible: false,
+      renewSelectedValue: false,
     }
     this.enumBtnGroup = [
       {
@@ -115,13 +128,13 @@ class ShareHouseDetail extends Component {
         iconName: 'xiugai-',
         style: {backgroundColor: CommonColor.color_white}
       },
-/*       {
-        label: '发布',
-        value: 'Push',
-        color: '#4aa8f5',
-        iconName: 'fasong-',
-        style: {backgroundColor: CommonColor.color_white}
-      }, */
+      /*       {
+              label: '发布',
+              value: 'Push',
+              color: '#4aa8f5',
+              iconName: 'fasong-',
+              style: {backgroundColor: CommonColor.color_white}
+            }, */
       {
         label: '预定',
         value: 'Order',
@@ -163,6 +176,9 @@ class ShareHouseDetail extends Component {
           }
         }
     )
+    getButtons('HouseList').then((data)=>{
+      this.HouseListButtons = data
+    })
   }
 
   componentDidMount() {
@@ -171,7 +187,6 @@ class ShareHouseDetail extends Component {
     this.viewDidBlur = this.props.navigation.addListener(
         'willBlur',
         (obj) => {
-          Picker.hide()
           this.setState({
             isShowShadow: false,
             flag: false,
@@ -190,6 +205,9 @@ class ShareHouseDetail extends Component {
     let apiFn = selectShareHouseDetail
     if (this.query.isMine) {
       apiFn = selectMyHouseDetail
+    }
+    if (this.IsBoss) {
+      apiFn = ShowBossKeyShareHouseInfoByID
     }
     apiFn({
       HouseKey: this.props.navigation.state.params.HouseKey
@@ -214,6 +232,7 @@ class ShareHouseDetail extends Component {
         let roomName = ele.RoomName === '' ? '整租' : ele.RoomName
         this.state.HouseNameList.push(roomName)
       })
+      this.fetchRenewInfo()
       this.setState({
         buttonGroup: this.getButtons(),
         HouseInfoData: this.state.HouseInfoData,
@@ -229,6 +248,20 @@ class ShareHouseDetail extends Component {
         isDisabled: false
       })
     })
+  }
+
+  fetchRenewInfo() {
+    const HouseItem = this.state.HouseInfoData[this.state.CurRoomIndex]
+    if (this.state.RenewList[this.state.CurRoomIndex] === undefined && HouseItem.HouseStatus === 5) {
+      FindHouseWhetherRentOut(
+          {HouseID: HouseItem.KeyID}
+      ).then(({Data}) => {
+        this.state.RenewList[this.state.CurRoomIndex] = Data.IsContractExtension
+        this.setState({
+          RenewList: [...this.state.RenewList]
+        })
+      })
+    }
   }
 
   // componentWillUnmount() {
@@ -334,9 +367,34 @@ class ShareHouseDetail extends Component {
   changeRoom(index, disabled = false) {
     if (disabled) return
     this.state.CurRoomIndex = index
+    this.fetchRenewInfo()
     this.setState({
       CurRoomIndex: index,
       buttonGroup: this.getButtons()
+    })
+  }
+
+  changeRenewStatus() {
+    this.setState({
+      renewVisible: true,
+      renewSelectedValue: this.state.RenewList[this.state.CurRoomIndex] === 0 ? '待确定' : '不续约'
+    })
+  }
+
+  renewConfirm(data) {
+    const HouseItem = this.state.HouseInfoData[this.state.CurRoomIndex]
+    EditHouseWhetherRentOut({
+      HouseID: HouseItem.KeyID,
+      Type: 2,
+      IsContractExtension: data.value
+    }).then(() => {
+      this.state.RenewList[this.state.CurRoomIndex] = data.value
+      this.setState({
+        RenewList: this.state.RenewList
+      })
+      this.toastMsg('设置成功')
+    }).catch(() => {
+      this.toastMsg('设置失败')
     })
   }
 
@@ -378,7 +436,6 @@ class ShareHouseDetail extends Component {
   }
 
   closeShadow() {
-    Picker.hide()
     this.setState({
       isShowShadow: false
     })
@@ -409,7 +466,7 @@ class ShareHouseDetail extends Component {
       })
     } else {
       // 自己添加的预定
-      if(item.ord&&item.ord.IsMe===0){
+      if (item.ord && item.ord.IsMe === 0) {
         Alert.alert('温馨提示', '确定要取消该预定吗?', [
           {text: '取消'},
           {
@@ -429,7 +486,7 @@ class ShareHouseDetail extends Component {
                     })
                     GetHouseBadgeInfo({
                       HouseID: item.KeyID
-                    }).then(({Data})=>{
+                    }).then(({Data}) => {
                       // 需要修改个人房源列表中的数据
                       this.props.dispatch(
                           updateList({
@@ -457,7 +514,7 @@ class ShareHouseDetail extends Component {
             }
           }
         ])
-      }else{
+      } else {
         this.props.navigation.navigate('AgentAddOrderRemark', {
           isAgree: false,
           orderId: item.ReservationID,
@@ -474,7 +531,7 @@ class ShareHouseDetail extends Component {
     // if (item.ReservationID) {
     //   this.props.navigation.navigate('AgentEditTenantContract', {OrderID: item.ReservationID})
     // } else {
-      this.props.navigation.navigate('AgentEditTenantContract', {HouseID: item.KeyID})
+    this.props.navigation.navigate('AgentEditTenantContract', {HouseID: item.KeyID})
     // }
   }
 
@@ -534,17 +591,17 @@ class ShareHouseDetail extends Component {
     let buttons = []
     if (!item) return []
     if (this.query.isMine) {
-      if(item.HouseStatus===7){
+      if (item.HouseStatus === 7) {
         if (item.ReservationID) {
           buttons = ['Edit', 'Push']
         } else {
           buttons = ['Edit', 'Push']
         }
-      }else{
+      } else {
         if (item.ReservationID) {
-          if(item.OrderStatus===2){ // 预定成功不能取消
+          if (item.OrderStatus === 2) { // 预定成功不能取消
             buttons = ['Edit', 'Push', 'OrderContract', 'HouseInfo']
-          }else{
+          } else {
             buttons = ['Edit', 'Push', 'CancelOrder', 'OrderContract', 'HouseInfo']
           }
         } else {
@@ -553,11 +610,34 @@ class ShareHouseDetail extends Component {
       }
     } else {
       if (item.ReservationID) {
-        // buttons = ['OrderContract']
+        buttons = ['OrderContract']
       } else {
         buttons = ['Order', 'OrderContract']
       }
     }
+    if (this.query.isMine) {
+      // 租客登记
+      const index1 = buttons.findIndex(x => x === 'OrderContract')
+      if (index1 > -1 && this.HouseListButtons.findIndex(x => x.EActionName === 'TenantRegistration') === -1) {
+        buttons.splice(index1, 1)
+      }
+      // 预定
+      const index2 = buttons.findIndex(x => x === 'Order')
+      if (index2 > -1 && this.HouseListButtons.findIndex(x => x.EActionName === 'AddReservation') === -1) {
+        buttons.splice(index2, 1)
+      }
+      // 取消预定
+      const index3 = buttons.findIndex(x => x === 'CancelOrder')
+      if (index3 > -1 && this.HouseListButtons.findIndex(x => x.EActionName === 'CancelReservation') === -1) {
+        buttons.splice(index3, 1)
+      }
+      // 修改
+      const index4 = buttons.findIndex(x => x === 'Edit')
+      if (index4 > -1 && this.HouseListButtons.findIndex(x => x.EActionName === 'EditHouse') === -1) {
+        buttons.splice(index4, 1)
+      }
+    }
+    console.log(this.HouseListButtons)
     return this.enumBtnGroup.filter(x => buttons.find(y => y === x.value))
   }
 
@@ -572,7 +652,7 @@ class ShareHouseDetail extends Component {
       ImageLocation: ''
     }]
     const Roomlist = this.state.HouseInfoData.map((ele, index) => {
-      const disabled = (ele.ReservationID || ele.HouseStatus === 5) && !this.query.isMine
+      const disabled = (!!ele.ReservationID || ele.HouseStatus === 5) && !this.query.isMine && +ele.KeyID !== +this.query.ShareRentHouseID
       return (
           <TouchableOpacity
               style={[style.Other_program_btn, this.state.CurRoomIndex === index ? style.Other_program_btn_select : null, disabled ? style.Other_program_btn_disabled : null]}
@@ -594,31 +674,31 @@ class ShareHouseDetail extends Component {
       </TouchableOpacity>
     </View>)
     const IconList = this.state.GoodsList.map((ele, index) => (
-      <View style={style.detail_config_list_item} key={index}>
-        <View style={style.detail_config_icon}>
-          <IconFont
-            name={ele.icon}
-            style={ele.name === '空调' ? { marginVertical : 5 } : null}
-            size={ele.name === '空调' ? 20 : 30}
-            color={ele.isExist ? '#FE9C11' : '#cccccc'}
-          />
+        <View style={style.detail_config_list_item} key={index}>
+          <View style={style.detail_config_icon}>
+            <IconFont
+                name={ele.icon}
+                style={ele.name === '空调' ? {marginVertical: 5} : null}
+                size={ele.name === '空调' ? 20 : 30}
+                color={ele.isExist ? '#FE9C11' : '#cccccc'}
+            />
+          </View>
+          <View style={style.detail_config_icontext}>
+            <Text
+                style={[
+                  ele.isExist
+                      ? style.detail_config_text
+                      : style.detail_config_no_text
+                ]}
+            >
+              {ele.name}
+            </Text>
+          </View>
         </View>
-        <View style={style.detail_config_icontext}>
-          <Text
-            style={[
-              ele.isExist
-                ? style.detail_config_text
-                : style.detail_config_no_text
-            ]}
-          >
-            {ele.name}
-          </Text>
-        </View>
-      </View>
     ))
     const HouseImgList = ImgList.map((ele, index) => (
         <TouchableOpacity style={{flex: 1, height: 300}} onPress={this.openImageViewer.bind(this, index)} key={index}>
-          <Image source={{uri: getThumbImgUrl(ele.ImageLocation,{w: 600})}}
+          <AliImage source={{uri: getThumbImgUrl(ele.ImageLocation, {w: 600})}}
                  style={{flex: 1, height: 300}} resizeMode="cover" key={index}/>
         </TouchableOpacity>
     ))
@@ -634,7 +714,7 @@ class ShareHouseDetail extends Component {
           }} title={!HouseInfoData[CurRoomIndex] ? '' : HouseInfoData[CurRoomIndex].HouseName}
                  description={!HouseInfoData[CurRoomIndex] ? '' : `${HouseInfoData[CurRoomIndex].RentMoeny}元  ${HouseInfoData[CurRoomIndex].RoomCount}室${HouseInfoData[CurRoomIndex].HallCount}厅/押${HouseInfoData[CurRoomIndex].PledgeNumber}付${HouseInfoData[CurRoomIndex].PayNumber}`}
                  thumbImage={getThumbImgUrl(ImgList[0].ImageLocation)}
-                 webpageUrl={`${webpageUrl}House/ShareHouseDetails?HouseKey=${this.props.navigation.state.params.HouseKey}&HouseID=${HouseItem && HouseItem.KeyID}`}/>
+                 webpageUrl={`${webpageUrl}House/ShareHouseDetails?HouseKey=${this.props.navigation.state.params.HouseKey}&HouseID=${HouseItem && HouseItem.KeyID}&UserName=${this.props.userInfo.UserName}&UserPhone=${this.props.userInfo.LoginCode}`}/>
           {this.state.isShowShadow ? <TouchableWithoutFeedback onPress={this.closeShadow.bind(this)}>
             <View style={{
               width: width,
@@ -646,10 +726,11 @@ class ShareHouseDetail extends Component {
               backgroundColor: 'rgba(0, 0, 0, 0.6)'
             }}/>
           </TouchableWithoutFeedback> : null}
-          <Header title={`房源详情`} headerRight={<TouchableOpacity onPress={() => this.shareRef.openDialog()}>
-            <IconFont name='fenxiangcopy' size={18} color='#fff'/>
-          </TouchableOpacity>
-          } style={{
+          <Header title={`房源详情`}
+                  headerRight={(this.IsBoss || this.query.isMine) ? null : <TouchableOpacity onPress={() => this.shareRef.openDialog()}>
+                    <IconFont name='fenxiangcopy' size={18} color='#fff'/>
+                  </TouchableOpacity>
+                  } style={{
             position: 'absolute',
             zIndex: 999,
             top: 0,
@@ -779,6 +860,25 @@ class ShareHouseDetail extends Component {
                   </View>
                 </Placeholder.Line>
               </View>
+              <View style={style.detail_content_time}>
+                <View style={style.detail_content_info_iconbox}>
+                  {/* icon */}
+                  <IconFont name='precontract' size={16} color='#cccccc'></IconFont>
+                  {/* <Text style={style.detail_content_info_icon}>icon</Text> */}
+                </View>
+                <Placeholder.Line
+                    style={style.detail_content_info_textarea}
+                    color='#eeeeee'
+                    width='50%'
+                    textSize={16}
+                    onReady={this.state.isReady}
+                >
+                  <View style={style.detail_content_info_textarea}>
+                    <Text
+                        style={style.detail_content_info_text}>业主到期：{HouseInfoData[CurRoomIndex] && HouseInfoData[CurRoomIndex].OwnerEndTime}</Text>
+                  </View>
+                </Placeholder.Line>
+              </View>
               <View style={style.detail_content_address}>
                 <View style={style.detail_content_info_iconbox}>
                   {/* icon */}
@@ -806,6 +906,16 @@ class ShareHouseDetail extends Component {
               <View style={style.Other_program}>
                 {Roomlist}
               </View>
+              {this.state.RenewList[this.state.CurRoomIndex] !== undefined && this.query.isMine &&
+              <TouchableOpacity style={style.detail_renew} onPress={() => {
+                this.changeRenewStatus()
+              }}>
+                <Text style={style.detail_renew_text1}>是否续约：</Text>
+                <Text
+                    style={style.detail_renew_text2}>{this.state.RenewList[this.state.CurRoomIndex] === 0 ? '待确定' : '不续约'}</Text>
+                <Image source={require('./images/icon_state_edit.png')}
+                       style={style.detail_renew_img}/>
+              </TouchableOpacity>}
               {/* <TouchableOpacity style={style.detail_room_num_right} onPress={this.changeRoom.bind(this)}>
               <View style={style.detail_room_num_btn}>
                 <Placeholder.Line
@@ -820,53 +930,62 @@ class ShareHouseDetail extends Component {
               </View>
             </TouchableOpacity> */}
             </View>
-            {this.query.isMine&&HouseInfoData[CurRoomIndex]&&HouseInfoData[CurRoomIndex].ord&&
-              <View style={style.detail_manager}>
-                <View style={style.detail_manager_title}>
-                  <Text style={style.detail_manager_title_text}>预定信息</Text>
+            {this.query.isMine && HouseInfoData[CurRoomIndex] && HouseInfoData[CurRoomIndex].ord &&
+            <View style={style.detail_manager}>
+              <View style={style.detail_manager_title}>
+                <Text style={style.detail_manager_title_text}>预定信息</Text>
+              </View>
+              <View style={style.detail_order_box}>
+                <Placeholder.Line
+                    color='#eeeeee'
+                    width='30%'
+                    textSize={16}
+                    onReady={this.state.isReady}
+                >
+                </Placeholder.Line>
+                <View style={style.detail_order_line}>
+                  <View style={style.detail_order_inner_box}>
+                    <View style={style.detail_order_text_left}><Text style={style.detail_order_text}>姓<Text
+                        style={style.detail_order_placeholder}>占位</Text>名</Text></View>
+                    <View style={style.detail_order_text_right}><Text
+                        style={style.detail_order_text}>{HouseInfoData[CurRoomIndex].ord.OrderName}</Text></View>
+                  </View>
+                  <View style={style.detail_order_inner_box}>
+                    <View style={style.detail_order_text_left}><Text style={style.detail_order_text}>电<Text
+                        style={style.detail_order_placeholder}>占位</Text>话</Text></View>
+                    <View style={style.detail_order_text_right}><Text
+                        style={style.detail_order_text}>{HouseInfoData[CurRoomIndex].ord.OrderPhone}</Text></View>
+                  </View>
                 </View>
-                <View style={style.detail_order_box}>
-                  <Placeholder.Line
-                      color='#eeeeee'
-                      width='30%'
-                      textSize={16}
-                      onReady={this.state.isReady}
-                  >
-                  </Placeholder.Line>
-                  <View style={style.detail_order_line}>
-                    <View style={style.detail_order_inner_box}>
-                      <View style={style.detail_order_text_left}><Text style={style.detail_order_text}>姓<Text style={style.detail_order_placeholder}>占位</Text>名</Text></View>
-                      <View style={style.detail_order_text_right}><Text style={style.detail_order_text}>{HouseInfoData[CurRoomIndex].ord.OrderName}</Text></View>
-                    </View>
-                    <View style={style.detail_order_inner_box}>
-                      <View style={style.detail_order_text_left}><Text style={style.detail_order_text}>电<Text style={style.detail_order_placeholder}>占位</Text>话</Text></View>
-                      <View style={style.detail_order_text_right}><Text style={style.detail_order_text}>{HouseInfoData[CurRoomIndex].ord.OrderPhone}</Text></View>
-                    </View>
+                <View style={style.detail_order_line}>
+                  <View style={style.detail_order_inner_box}>
+                    <View style={style.detail_order_text_left}><Text style={style.detail_order_text}>定<Text
+                        style={style.detail_order_placeholder}>占位</Text>金</Text></View>
+                    <View style={style.detail_order_text_right}><Text
+                        style={style.detail_order_text}>{HouseInfoData[CurRoomIndex].ord.OrderMoney}元</Text></View>
                   </View>
-                  <View style={style.detail_order_line}>
-                    <View style={style.detail_order_inner_box}>
-                      <View style={style.detail_order_text_left}><Text style={style.detail_order_text}>定<Text style={style.detail_order_placeholder}>占位</Text>金</Text></View>
-                      <View style={style.detail_order_text_right}><Text style={style.detail_order_text}>{HouseInfoData[CurRoomIndex].ord.OrderMoney}元</Text></View>
-                    </View>
-                    <View style={style.detail_order_inner_box}>
-                      <View style={style.detail_order_text_left}><Text style={style.detail_order_text}>最晚签约</Text></View>
-                      <View style={style.detail_order_text_right}><Text style={style.detail_order_text}>{dateFormat(HouseInfoData[CurRoomIndex].ord.LastSignDate)}</Text></View>
-                    </View>
+                  <View style={style.detail_order_inner_box}>
+                    <View style={style.detail_order_text_left}><Text style={style.detail_order_text}>最晚签约</Text></View>
+                    <View style={style.detail_order_text_right}><Text
+                        style={style.detail_order_text}>{dateFormat(HouseInfoData[CurRoomIndex].ord.LastSignDate)}</Text></View>
                   </View>
-                  <View style={style.detail_order_line}>
-                    <View style={style.detail_order_inner_box}>
-                      <View style={style.detail_order_text_left}><Text style={style.detail_order_text}>约定租期</Text></View>
-                      <View style={style.detail_order_text_right}><Text style={style.detail_order_text}>{dateFormat(HouseInfoData[CurRoomIndex].ord.LeaseStartTime)}至{dateFormat(HouseInfoData[CurRoomIndex].ord.LeaseEndTime)}</Text></View>
-                    </View>
+                </View>
+                <View style={style.detail_order_line}>
+                  <View style={style.detail_order_inner_box}>
+                    <View style={style.detail_order_text_left}><Text style={style.detail_order_text}>约定租期</Text></View>
+                    <View style={style.detail_order_text_right}><Text
+                        style={style.detail_order_text}>{dateFormat(HouseInfoData[CurRoomIndex].ord.LeaseStartTime)}至{dateFormat(HouseInfoData[CurRoomIndex].ord.LeaseEndTime)}</Text></View>
                   </View>
-                  <View style={style.detail_order_line}>
-                    <View style={style.detail_order_inner_box}>
-                      <View style={style.detail_order_text_left}><Text style={style.detail_order_text}>预定状态</Text></View>
-                      <View style={style.detail_order_text_right}><Text style={style.detail_order_text}>{getEnumDesByValue('OrderStatus',HouseInfoData[CurRoomIndex].ord.OrderStatus)}</Text></View>
-                    </View>
+                </View>
+                <View style={style.detail_order_line}>
+                  <View style={style.detail_order_inner_box}>
+                    <View style={style.detail_order_text_left}><Text style={style.detail_order_text}>预定状态</Text></View>
+                    <View style={style.detail_order_text_right}><Text
+                        style={style.detail_order_text}>{getEnumDesByValue('OrderStatus', HouseInfoData[CurRoomIndex].ord.OrderStatus)}</Text></View>
                   </View>
                 </View>
               </View>
+            </View>
             }
             <View style={style.detail_manager}>
               <View style={style.detail_manager_title}>
@@ -891,7 +1010,7 @@ class ShareHouseDetail extends Component {
                 {IconList}
               </View>
             </View>
-            <View style={style.detail_description}>
+            {!!HouseInfoData[CurRoomIndex] && <View style={style.detail_description}>
               <View style={style.detail_manager_title}>
                 <Text style={style.detail_manager_title_text}>房源描述</Text>
               </View>
@@ -899,13 +1018,21 @@ class ShareHouseDetail extends Component {
                 <Text
                     style={style.detail_description_text}>{!HouseInfoData[CurRoomIndex] ? '' : HouseInfoData[CurRoomIndex].HouseDesc}</Text>
               </View>
+            </View>}
+            <View style={style.detail_description}>
+              <View style={style.detail_manager_title}>
+                <Text style={style.detail_manager_title_text}>附近房源</Text>
+              </View>
+              <NearHouse lat={HouseItem && HouseItem.Lat} lng={HouseItem && HouseItem.Lng}
+                         HouseID={HouseItem && HouseItem.KeyID}/>
             </View>
           </ScrollView>
+          {!this.query.IsBoss &&
           <ButtonGroup
               options={
                 this.state.buttonGroup
               }
-              hasIcon={true}
+              isIconContainer
               handleEditClick={this.goEdit.bind(this)}
               handleOrderClick={this.goOrder.bind(this, 0)}
               handleCancelOrderClick={this.goOrder.bind(this, 1)}
@@ -913,10 +1040,29 @@ class ShareHouseDetail extends Component {
               handleEditContractClick={this.goTenant.bind(this, 0)}
               handleOrderContractClick={this.goTenant.bind(this, 1)}
               handleHouseInfoClick={this.goHouseInfo.bind(this)}
+          />}
+          <Picker
+              visible={this.state.renewVisible}
+              pickerData={[
+                {
+                  value: 0,
+                  label: '待确定'
+                },
+                {
+                  value: 1,
+                  label: '不续约'
+                }
+              ]}
+              selectedValue={this.state.renewSelectedValue}
+              onPickerConfirm={(data) => this.renewConfirm(data)}
+              closeModal={() => {
+                this.setState({renewVisible: false})
+              }}
           />
         </View>
     )
   }
 }
 
-export default connect()(ShareHouseDetail);
+const mapToProps = state => ({userInfo: state.user.userinfo})
+export default connect(mapToProps)(ShareHouseDetail);

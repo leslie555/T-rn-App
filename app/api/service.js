@@ -156,3 +156,62 @@ export function EditCleaningApplication(data) {
   })
 }
 
+// LLLLLLLLLL
+// 搬家列表
+export function ShowHouseMoving(data) {
+  return request({
+    url: '/CompanyMethod/ShowHouseMoving',
+    method: 'post',
+    data
+  })
+}
+// 搬家详情
+export function ShowHouseMovingDetails(data) {
+  return request({
+    url: '/CompanyMethod/ShowHouseMovingDetails',
+    method: 'post',
+    data
+  })
+}
+// 删除/撤回搬家接口：OperationHouseMoving(KeyID,Type（1：删除 2：撤回）)
+export function OperationHouseMoving(data) {
+  return request({
+    url: '/CompanyMethod/OperationHouseMoving',
+    method: 'post',
+    data
+  })
+}
+
+// 搬家 新增  暂存1 新增2
+export function AddHouseMoving(data) {
+  return request({
+    url: '/CompanyMethod/AddHouseMoving',
+    method: 'post',
+    data
+  })
+}
+// 搬家 修改
+export function EditHouseMoving(data) {
+  return request({
+    url: '/CompanyMethod/EditHouseMoving',
+    method: 'post',
+    data
+  })
+}
+// 完成搬家
+export function CompleteHouseMoving(data) {
+  return request({
+    url: '/CompanyMethod/CompleteHouseMoving',
+    method: 'post',
+    data
+  })
+}
+
+// 指派搬家人员
+export function AssignMovingPerson(data) {
+  return request({
+    url: '/CompanyMethod/AssignMovingPerson',
+    method: 'post',
+    data
+  })
+}

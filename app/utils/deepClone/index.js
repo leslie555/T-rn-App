@@ -1,5 +1,5 @@
 import React from 'react'
-function getType(obj) {
+export function getType(obj) {
   const str = Object.prototype.toString.call(obj)
   const map = {
     '[object Boolean]': 'boolean',

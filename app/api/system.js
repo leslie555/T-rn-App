@@ -79,3 +79,30 @@ export function addAppExceptionLog(data) {
     data
   })
 }
+
+// html生成pdf文件地址
+export function HtmlToPDF(data) {
+  return request({
+    url: '/SystemMethod/HtmlToPDF',
+    method: 'post',
+    data
+  })
+}
+
+// 阿里云签字接口
+export function MakeAutograph(data) {
+  return request({
+    url: '/SystemMethod/MakeAutograph',
+    method: 'post',
+    data
+  })
+}
+
+// 图片保存
+export function imageUpDirect(data) {
+  return request({
+    url: '/SystemMethod/imageUpDirect',
+    method: 'post',
+    data
+  })
+}

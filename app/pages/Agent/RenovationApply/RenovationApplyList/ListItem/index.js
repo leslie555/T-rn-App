@@ -62,7 +62,7 @@ class ListItem extends Component {
       return this.colors.default
     }
   }
-  
+
   render() {
     const {
       HouseName,
@@ -81,8 +81,7 @@ class ListItem extends Component {
         style={styles.container}
         onPress={() => {
           this.props.navigation.navigate("AgentRenovationApplyDetail", {
-            KeyID,
-            isCompanyLeader: this.props.isCompanyLeader,
+            KeyID
           })
         }}
       >

@@ -1,10 +1,10 @@
 import {
-  SET_ORDERLIST,
-  UPDATE_ORDERLIST,
-  DELETE_ORDERLIST
+  SET_ORDERDETAIL,
+  UPDATE_ORDERDETAIL,
+  DELETE_ORDERDETAIL
 } from '../actionTypes'
 import { createAction } from 'redux-actions'
 
-export const setOrderList = createAction(SET_ORDERLIST)
-export const updateOrderList = createAction(UPDATE_ORDERLIST)
-export const deleteOrderList = createAction(DELETE_ORDERLIST)
+export const setOrderDetail = createAction(SET_ORDERDETAIL)
+export const updateOrderDetail = createAction(UPDATE_ORDERDETAIL)
+export const deleteOrderDetail = createAction(DELETE_ORDERDETAIL)

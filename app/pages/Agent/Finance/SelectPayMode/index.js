@@ -181,6 +181,81 @@ export default class SelectPayMode extends Component {
         return (
             <View style={Container}>
                 <Header title="选择支付方式"/>
+              <ScrollView  style={style.content}>
+                {
+                  !isAllPay ? (
+                      <View style={[style.count_style, style.flex]}>
+                        <View style={style.flex_center}>
+                          <Text style={style.count_title}>总金额</Text>
+                          <Text style={style.count_number}>¥{item.billInfo.totalAmount}</Text>
+                        </View>
+                        <View style={style.flex_center}>
+                          <Text style={style.count_title}>总未收</Text>
+                          <Text style={style.count_number}>¥{item.billInfo.unPaidAmount}</Text>
+                        </View>
+                      </View>
+                  ): (<View style={[style.count_style, style.flex]}>
+                    <View style={style.flex_center}>
+                      <Text style={style.count_title}>总金额</Text>
+                      <Text style={style.count_number}>¥{item.billInfo.totalAmount}</Text>
+                    </View>
+                  </View>)
+                }
+                {
+                  !isAllPay ? (
+                      <View class={style.money_input}>
+                        <GiftedForm.TextInputWidget
+                            name='PayAmount'
+                            title='本次支付'
+                            maxLength={8}
+                            disabled={false}
+                            forceChange={true}
+                            keyboardType={this.numberPad}
+                            value={item.payAmount + ''}
+                            onChangeText={(text) => {
+                              this.validateAmount(text)
+                            }}
+                        />
+                      </View>
+                  ) : (<View/>)
+                }
+                <View style={style.pay_mode_container}>
+                  <View style={style.pay_mode_title}>
+                    <Text style={style.pay_mode_title_text}>选择方式</Text>
+                  </View>
+                  <View style={style.pay_mode_list}>
+                    <TouchableOpacity onPress={this.togglePayMode.bind(this)}>
+                      <View style={style.pay_mode_item}>
+                        <View style={style.pay_mode_left}>
+                          <View>
+                            <IconFont style={style.pay_mode_icon} name='wxpay' size={20}
+                                      color='#24ba80'></IconFont>
+                          </View>
+                          <View>
+                            <Text style={style.pay_mode_text}>微信支付</Text>
+                          </View>
+                        </View>
+                        {WXIcon}
+                      </View>
+                    </TouchableOpacity>
+                    <View style={style.divide_line}></View>
+                    <TouchableOpacity onPress={this.togglePayMode.bind(this)}>
+                      <View style={style.pay_mode_item}>
+                        <View style={style.pay_mode_left}>
+                          <View>
+                            <IconFont style={style.pay_mode_icon} name='zhifubaozhifu' size={20}
+                                      color='#3da1f3'></IconFont>
+                          </View>
+                          <View>
+                            <Text style={style.pay_mode_text}>支付宝支付</Text>
+                          </View>
+                        </View>
+                        {ZFBIcon}
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </ScrollView>
                 {/*<ScrollView*/}
                     {/*ref='container'*/}
                     {/*automaticallyAdjustContentInsets={false}*/}
@@ -191,79 +266,7 @@ export default class SelectPayMode extends Component {
                         {/*backgroundColor: '#f6f6f6'*/}
                     {/*}}>*/}
                     {/*<View style={style.pay_info}>*/}
-                        {
-                            !isAllPay ? (
-                                <View style={[style.count_style, style.flex]}>
-                                    <View style={style.flex_center}>
-                                        <Text style={style.count_title}>总金额</Text>
-                                        <Text style={style.count_number}>¥{item.billInfo.totalAmount}</Text>
-                                    </View>
-                                    <View style={style.flex_center}>
-                                        <Text style={style.count_title}>总未收</Text>
-                                        <Text style={style.count_number}>¥{item.billInfo.unPaidAmount}</Text>
-                                    </View>
-                                </View>
-                            ): (<View style={[style.count_style, style.flex]}>
-                                <View style={style.flex_center}>
-                                    <Text style={style.count_title}>总金额</Text>
-                                    <Text style={style.count_number}>¥{item.billInfo.totalAmount}</Text>
-                                </View>
-                            </View>)
-                        }
-                        {
-                            !isAllPay ? (
-                                <View class={style.money_input}>
-                                    <GiftedForm.TextInputWidget
-                                        name='PayAmount'
-                                        title='本次支付'
-                                        maxLength={8}
-                                        disabled={false}
-                                        forceChange={true}
-                                        keyboardType={this.numberPad}
-                                        value={item.payAmount + ''}
-                                        onChangeText={(text) => {
-                                            this.validateAmount(text)
-                                        }}
-                                    />
-                                </View>
-                            ) : (<View/>)
-                        }
-                        <View style={style.pay_mode_container}>
-                            <View style={style.pay_mode_title}>
-                                <Text style={style.pay_mode_title_text}>选择方式</Text>
-                            </View>
-                            <View style={style.pay_mode_list}>
-                                <TouchableOpacity onPress={this.togglePayMode.bind(this)}>
-                                    <View style={style.pay_mode_item}>
-                                        <View style={style.pay_mode_left}>
-                                            <View>
-                                                <IconFont style={style.pay_mode_icon} name='wxpay' size={20}
-                                                          color='#24ba80'></IconFont>
-                                            </View>
-                                            <View>
-                                                <Text style={style.pay_mode_text}>微信支付</Text>
-                                            </View>
-                                        </View>
-                                        {WXIcon}
-                                    </View>
-                                </TouchableOpacity>
-                                <View style={style.divide_line}></View>
-                                <TouchableOpacity onPress={this.togglePayMode.bind(this)}>
-                                    <View style={style.pay_mode_item}>
-                                        <View style={style.pay_mode_left}>
-                                            <View>
-                                                <IconFont style={style.pay_mode_icon} name='zhifubaozhifu' size={20}
-                                                          color='#3da1f3'></IconFont>
-                                            </View>
-                                            <View>
-                                                <Text style={style.pay_mode_text}>支付宝支付</Text>
-                                            </View>
-                                        </View>
-                                        {ZFBIcon}
-                                    </View>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
+
                     {/*</View>*/}
                 {/*</ScrollView>*/}
                 <View style={style.pay_button_container}>
@@ -277,6 +280,9 @@ export default class SelectPayMode extends Component {
 }
 
 const style = StyleSheet.create({
+  content: {
+    flex: 1
+  },
     count_style: {
         height: 100,
         backgroundColor: '#fff',
@@ -343,10 +349,6 @@ const style = StyleSheet.create({
         backgroundColor: '#eee'
     },
     pay_button_container: {
-        position:'absolute',
-        left:0,
-        right:0,
-        bottom:0,
         paddingVertical: 15,
         paddingHorizontal: 15,
         height: 80,

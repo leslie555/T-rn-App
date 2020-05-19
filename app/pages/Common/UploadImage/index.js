@@ -1,5 +1,5 @@
 import React, {Component} from 'react'
-import {Header, ImageViewer} from '../../../components'
+import {Header, ImageViewer, AliImage} from '../../../components'
 import {
   Alert,
   Image,
@@ -17,10 +17,12 @@ import ImagePicker from 'react-native-image-crop-picker'
 import {ProgressButton} from 'react-native-progress-button'
 import {baseURL} from '../../../config/index'
 import storage from '../../../utils/storage'
+import uuid from '../../../utils/uuid'
 import {connect} from 'react-redux'
 import {setUploadImg} from '../../../redux/actions/uploadImg'
 import Toast from "react-native-root-toast";
 import IconFont from "../../../utils/IconFont";
+import { MakeAutograph, imageUpDirect } from '../../../api/system'
 
 class UploadImageScreen extends Component {
   constructor(props) {
@@ -33,10 +35,11 @@ class UploadImageScreen extends Component {
       showImageView: false,
       loading: false
     }
-    this.maxLength = this.props.maxLength || 20
-    this.limitSize = this.props.limitSize || 20
+    this.maxLength = this.props.navigation.getParam('maxLength', 20)
+    this.limitSize = this.props.navigation.getParam('limitSize', 20)
     this.scrollRef = null
     this.url = ''
+    this.signInfo = {}
   }
 
   componentWillMount() {
@@ -86,8 +89,8 @@ class UploadImageScreen extends Component {
       ImagePicker.openCamera({
         width: 300,
         height: 400,
-        cropping: true,
-        compressImageQuality: 0.8,
+        cropping: false,
+        compressImageQuality: 0.9,
         cropperChooseText: '选取',
         cropperCancelText: '取消'
       }).then(image => {
@@ -116,6 +119,7 @@ class UploadImageScreen extends Component {
         // 去重和去掉大图片
         let flag = false
         images = images.filter(x=>{
+          console.log(x.size)
           const sizeFlag = x.size>this.limitSize*1024*1024
           if(sizeFlag){
             flag = true
@@ -181,35 +185,37 @@ class UploadImageScreen extends Component {
     this.setState({
       loading: true
     })
-    let res = await this.uploadImage(
-        this.url,
-        this.state.imgArr.map(v => v.path)
-    )
-    try {
-      this.setState({
-        loading: false
-      })
-      res = JSON.parse(res._bodyInit)
-      Alert.alert('温馨提示', '图片上传成功', [
-        {
-          text: '确认', onPress: () => {
-            this.props.dispatch(
-                setUploadImg({
-                  type: navigation.getParam('type', 'EditOwnerContract'),
-                  id: navigation.getParam('id', 666),
-                  data: res.Data
-                })
-            )
-            this.props.navigation.goBack()
-          }
-        }
-      ], {cancelable: false})
-    } catch (error) {
-      Toast.show('上传失败，请重新上传!', {
-        duration: Toast.durations.SHORT,
-        position: Toast.positions.BOTTOM
-      })
-    }
+    console.log(this.state.imgArr)
+    this.uploadAll(this.state.imgArr)
+    // let res = await this.uploadImage(
+    //     this.url,
+    //     this.state.imgArr.map(v => v.path)
+    // )
+    // try {
+    //   this.setState({
+    //     loading: false
+    //   })
+    //   res = JSON.parse(res._bodyInit)
+    //   Alert.alert('温馨提示', '图片上传成功', [
+    //     {
+    //       text: '确认', onPress: () => {
+    //         this.props.dispatch(
+    //             setUploadImg({
+    //               type: navigation.getParam('type', 'EditOwnerContract'),
+    //               id: navigation.getParam('id', 666),
+    //               data: res.Data
+    //             })
+    //         )
+    //         this.props.navigation.goBack()
+    //       }
+    //     }
+    //   ], {cancelable: false})
+    // } catch (error) {
+    //   Toast.show('上传失败，请重新上传!', {
+    //     duration: Toast.durations.SHORT,
+    //     position: Toast.positions.BOTTOM
+    //   })
+    // }
     // let res = JSON.parse(
     //   `[{"KeyID":63881,"UniqueCode":"","ImageLocation":"/funrenting/636921541519977249","IsDelete":0,"AddTime":"0001-01-01T00:00:00","AddUser":null,"ModifyUser":null,"ModifyStatus":0},{"KeyID":63880,"UniqueCode":"","ImageLocation":"/funrenting/636921541517374193","IsDelete":0,"AddTime":"0001-01-01T00:00:00","AddUser":null,"ModifyUser":null,"ModifyStatus":0}]`
     // )
@@ -222,6 +228,120 @@ class UploadImageScreen extends Component {
     // )
   }
 
+  uploadAll(imgs) {
+    // 上传所有图片
+    this.getSignature().then(sign => {
+      const promiseArr = []
+      const imgArr = []
+      imgs.forEach((file) => {
+        let mime = ''
+        switch(file.mime) {
+          case 'image/jpeg':
+            mime = '.jpg'
+            break
+          case 'image/jpg':
+            mime = '.jpg'
+            break
+          case 'image/png':
+            mime = '.png'
+            break
+        }
+        const newKey = sign.dir + new Date().getTime() + `_` + uuid() + mime
+        // file.name = newKey // TODO
+        promiseArr.push(
+          this.uploadOSSSingle(file.path, {
+            ...sign,
+            key: newKey
+          })
+        )
+        imgArr.push({
+          ImageLocation: '/' + newKey,
+          UniqueCode: ''
+        })
+      })
+      Promise.all(promiseArr).then(() => {
+        // 图片上传并保存
+        imageUpDirect({
+          imageUploads: imgArr
+        }).then((res) => {
+          Alert.alert('温馨提示', '图片上传成功', [
+            {
+              text: '确认', onPress: () => {
+                this.props.dispatch(
+                    setUploadImg({
+                      type: this.props.navigation.getParam('type', 'EditOwnerContract'),
+                      id: this.props.navigation.getParam('id', 666),
+                      data: res.Data
+                    })
+                )
+                this.props.navigation.goBack()
+              }
+            }
+          ], {cancelable: false})
+        }).catch((e) => {
+          Toast.show('上传失败，请重新上传1!', {
+            duration: Toast.durations.SHORT,
+            position: Toast.positions.BOTTOM
+          })
+        })
+      }).catch(() => {
+        Toast.show('上传失败，请重新上传0!', {
+          duration: Toast.durations.SHORT,
+          position: Toast.positions.BOTTOM
+        })
+      })
+    })
+  }
+
+  getSignature() {
+    return new Promise((resolve, reject) => {
+      if (this.signInfo.key) {
+        resolve({ ...this.signInfo })
+      } else {
+        MakeAutograph()
+          .then(({ Data }) => {
+            this.signInfo = JSON.parse(Data)
+            console.log(this.signInfo)
+            resolve({ ...this.signInfo })
+          })
+          .catch(e => {
+            reject(e)
+          })
+      }
+    })
+  }
+
+  uploadOSSSingle(fileUri, sign) {
+    return new Promise((resolve,reject) => {
+      const param = new FormData()
+      param.append('key', sign.key)
+      param.append('policy', sign.policy)
+      param.append('OSSAccessKeyId', sign.accessid)
+      param.append('success_action_status', '200')
+      param.append('callback', sign.callback)
+      param.append('signature', sign.signature)
+      param.append('file', {
+        uri: fileUri,
+        type: 'application/octet-stream',
+        name: 'image.png'
+      })
+      try {
+        fetch(sign.host, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          },
+          body: param
+        }).then(() => {
+          resolve()
+        })
+      } catch(e) {
+        console.log(e)
+        reject(e)
+      }
+    })
+  }
+
   render() {
     const images = this.state.imgArr.map((val, idx) => {
       return (
@@ -232,7 +352,7 @@ class UploadImageScreen extends Component {
               }}
               key={idx}
           >
-            <Image
+            <AliImage
                 style={style.imageItem}
                 source={{
                   uri: `${val.path}`

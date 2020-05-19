@@ -10,12 +10,22 @@ import storage from '../../../utils/storage'
 export default class AuthLoadingScreen extends Component {
   constructor(props) {
     super(props)
-    this._bootstrapAsync()
+    this.willFocusSubscription = this.props.navigation.addListener(
+        'willFocus',
+        payload => {
+          this._bootstrapAsync()
+        })
+  }
+
+  componentWillUnmount() {
+    this.willFocusSubscription.remove()
   }
 
   _bootstrapAsync = () => {
     storage.get('token').then(token => {
       this.props.navigation.navigate(token ? 'AgentApp' : 'Auth')
+    }).catch(()=>{
+      this.props.navigation.navigate('Auth')
     })
   }
 

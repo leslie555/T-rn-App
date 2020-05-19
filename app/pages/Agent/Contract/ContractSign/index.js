@@ -1,7 +1,7 @@
 import React from 'react';
 import {Alert, BackHandler, Dimensions, Platform, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {FullModal, Header} from '../../../../components'
-import {personAuth} from '../../../../api/owner'
+import {personAuth, AddRealNameAuthenticateNeed} from '../../../../api/owner'
 import {getQueryString} from '../../../../utils/urlUtil'
 import {WebView} from 'react-native-webview';
 import IconFont from "../../../../utils/IconFont";
@@ -99,6 +99,7 @@ export default class ContractSign extends React.Component {
                 this.handleChange(navState)
               }}
               cacheEnabled={false}
+              mixedContentMode='always'
               style={styles.webBox}/>}
         </View>
     )
@@ -118,30 +119,26 @@ export default class ContractSign extends React.Component {
         this.CustomerId = Data.CustomerId
         this.getSignUrl()
       } else {
-        this.authFail()
+        this.authFail('4')
       }
     }).catch(() => {
-      // this.authFail()
-      this.setState({
-        visible: false
-      })
+      this.authFail('3')
+      // this.setState({
+      //   visible: false
+      // })
     })
   }
 
-  authFail() {
+  authFail(text) {
+    console.log('身份认证错误标识' + text)
     this.setState({
       visible: false
     }, () => {
       setTimeout(() => {
-        Alert.alert('温馨提示', '个人认证失败，请核对客户，身份证和电话。', [
+        Alert.alert('温馨提示', '请核对客户，身份证和电话。', [
           {
-            text: '返回上一页', onPress: () => {
+            text: '返回修改', onPress: () => {
               this.props.navigation.goBack()
-            }
-          },
-          {
-            text: '重新认证', onPress: () => {
-              this.personAuth()
             }
           }
         ], {cancelable: false})
@@ -158,14 +155,25 @@ export default class ContractSign extends React.Component {
       const param = {}
       param.i = this.query.IDCard
       param.m = this.query.Mobile
-      param.n = encodeURIComponent(this.query.Name)
+      param.n = this.query.Name
       param.c = this.query.ContractID
       param.to = token
       param.ty = this.type
       param.cu = this.CustomerId
+      param.im = this.query.Img || ''
       param.ti = new Date().getTime()
-      this.setState({
-        signUrl: decodeURIComponent(phoneURL + 'ContractSign?p=' + JSON.stringify(param))
+      debugger
+      AddRealNameAuthenticateNeed({
+        ReturnTWUrl: JSON.stringify(param),
+        CustomerId: this.CustomerId
+      }).then(({ Data }) => {
+        this.setState({
+          signUrl: decodeURIComponent(phoneURL + 'ContractAuthInfo?p=' + Data + '&to=' + param.to)
+        })
+      }).catch(() => {
+        this.setState({
+          visible: false
+        })
       })
     })
     // return getFddAuthUrl({

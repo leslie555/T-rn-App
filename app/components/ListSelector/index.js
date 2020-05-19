@@ -15,7 +15,7 @@ import {
 } from 'react-native'
 import { DisplayStyle, DEVICE_WIDTH } from '../../styles/commonStyles'
 import DatePicker from './DatePicker'
-import deepClone from '../../utils/deepClone'
+import deepClone, { getType } from '../../utils/deepClone'
 
 const { Surface, Shape, Path, Group } = ART
 const AnimatedTouchableWithoutFeedback = Animated.createAnimatedComponent(
@@ -194,15 +194,19 @@ export default class TopMenu extends Component {
   constructor(props) {
     super(props)
     let array = props.config
+    // 添加每个title名字
     let top = []
+    // 更多的高度
     let maxHeight = []
     let subselected = []
     let height = []
+    // 更多的里面的内容
     let panelSelected = []
     //最大高度
     var max = parseInt(((HEIGHT - 80) * 0.7) / 43)
     for (let i = 0, c = array.length; i < c; ++i) {
       let item = array[i]
+      // customize  自定义组件
       if (item.type === 'customize') {
         top[i] = {
           key: item.componentKey
@@ -216,27 +220,30 @@ export default class TopMenu extends Component {
           top[i] = item.data[item.selectedIndex].title
         }
       }
+      // panel  更多
       if (item.type === 'panel') {
         maxHeight[i] = item.height || max * 43
-        item.components.forEach(val => {
-          if (val.type === 'checkbox') {
-            panelSelected.push({
-              type: 'checkbox',
-              title: val.title,
-              selected: val.selected,
-              data: null
-            })
-          } else if (val.type === 'datepicker') {
-            panelSelected.push({
-              type: 'datepicker',
-              title: val.title,
-              data: {
-                startTime: '',
-                endTime: ''
-              }
-            })
-          }
-        })
+        if (!item.customize) {
+          item.components.forEach(val => {
+            if (val.type === 'checkbox') {
+              panelSelected.push({
+                type: 'checkbox',
+                title: val.title,
+                selected: val.selected,
+                data: null
+              })
+            } else if (val.type === 'datepicker') {
+              panelSelected.push({
+                type: 'datepicker',
+                title: val.title,
+                data: {
+                  startTime: '',
+                  endTime: ''
+                }
+              })
+            }
+          })
+        }
       } else if (item.type === 'customize') {
         maxHeight[i] = 0
       } else {
@@ -260,6 +267,9 @@ export default class TopMenu extends Component {
     this.manually = false // 是否外部调用函数去修改state,如果是则不触发渲染list
   }
 
+  static defaultProps = {
+    renderCustomPanel: () => {} // 仅在自定义panel情况下使用 第一个参数close可以关闭面板,第二个setTitle修改面板标题
+  }
   componentDidMount() {}
 
   createAnimation = (index, height, isShow) => {
@@ -344,6 +354,22 @@ export default class TopMenu extends Component {
       this.hide(this.state.selectedIndex)
     }
   }
+  manuallySetTitle = (title, index = this.state.selectedIndex) => {
+    // 提供外部改变title方法
+    const top = [...this.state.top]
+    if (getType(title) === 'object') {
+      // 一次性改动多个的情况
+      const entries = Object.entries(title)
+      entries.forEach(v => {
+        const [key, val] = v
+        top[key] = val
+      })
+    } else {
+      top[index] = title
+    }
+    this.state.top = top
+    this.setState({ top })
+  }
 
   hide = (index, subselected) => {
     let opts = {
@@ -375,7 +401,7 @@ export default class TopMenu extends Component {
     this.setState(opts)
     this.onHide(index)
   }
-
+  // 打开第几个面板
   onShow = index => {
     Animated.parallel([
       this.createAnimation(index, this.state.maxHeight[index], true),
@@ -448,6 +474,53 @@ export default class TopMenu extends Component {
 
     let enabled =
       this.state.selectedIndex == index || this.state.current == index
+    const renderPanel = () => {
+      const renderPanelFn = d.key
+        ? this.props.renderCustomPanelMap[d.key]
+        : this.props.renderCustomPanel
+      return d.customize ? (
+        renderPanelFn(() => {
+          this.hide(this.state.selectedIndex)
+        }, this.manuallySetTitle)
+      ) : (
+        <View style={styles.panelContainer}>
+          {d.components.map((data, subindex) => {
+            switch (data.type) {
+              case 'checkbox':
+                return (
+                  <Checkbox
+                    index={index}
+                    tempPanelSelected={this.state.tempPanelSelected}
+                    setPanelSelected={tempPanelSelected =>
+                      this.setState({
+                        tempPanelSelected
+                      })
+                    }
+                    subindex={subindex}
+                    key={subindex}
+                    {...data}
+                  />
+                )
+              case 'datepicker':
+                return (
+                  <DatePicker
+                    index={index}
+                    tempPanelSelected={this.state.tempPanelSelected}
+                    setPanelSelected={tempPanelSelected =>
+                      this.setState({
+                        tempPanelSelected
+                      })
+                    }
+                    subindex={subindex}
+                    key={subindex}
+                    {...data}
+                  />
+                )
+            }
+          })}
+        </View>
+      )
+    }
     return (
       <Animated.View
         key={index}
@@ -467,59 +540,22 @@ export default class TopMenu extends Component {
             height: this.state.maxHeight[index]
           }}
         >
-          {d.type === 'panel' ? (
-            <View style={styles.panelContainer}>
-              {d.components.map((data, subindex) => {
-                switch (data.type) {
-                  case 'checkbox':
-                    return (
-                      <Checkbox
-                        index={index}
-                        tempPanelSelected={this.state.tempPanelSelected}
-                        setPanelSelected={tempPanelSelected =>
-                          this.setState({
-                            tempPanelSelected
-                          })
-                        }
-                        subindex={subindex}
-                        key={subindex}
-                        {...data}
-                      />
-                    )
-                  case 'datepicker':
-                    return (
-                      <DatePicker
-                        index={index}
-                        tempPanelSelected={this.state.tempPanelSelected}
-                        setPanelSelected={tempPanelSelected =>
-                          this.setState({
-                            tempPanelSelected
-                          })
-                        }
-                        subindex={subindex}
-                        key={subindex}
-                        {...data}
-                      />
-                    )
-                }
+          {d.type === 'panel'
+            ? renderPanel()
+            : d.data.map((data, subindex) => {
+                return (
+                  <Comp
+                    onSelectMenu={this.onSelectMenu}
+                    index={index}
+                    subindex={subindex}
+                    data={data}
+                    selected={subselected == subindex}
+                    key={subindex}
+                  />
+                )
               })}
-            </View>
-          ) : (
-            d.data.map((data, subindex) => {
-              return (
-                <Comp
-                  onSelectMenu={this.onSelectMenu}
-                  index={index}
-                  subindex={subindex}
-                  data={data}
-                  selected={subselected == subindex}
-                  key={subindex}
-                />
-              )
-            })
-          )}
         </ScrollView>
-        {d.type === 'panel' && (
+        {d.type === 'panel' && !d.customize && (
           <View style={styles.panelButtons}>
             <TouchableOpacity
               style={styles.panelButton}

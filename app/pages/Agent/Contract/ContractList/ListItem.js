@@ -104,8 +104,22 @@ class ListItem extends React.Component {
           }
         })
         break
+      /* case 5:
+        this.setState({
+          RentLeaseStatus: {
+            ...statusText,
+            color: 'rgb(56,158,242)'
+          }
+        })
+        break */
 
       default:
+        this.setState({
+          RentLeaseStatus: {
+            ...statusText,
+            color: 'rgb(56,158,242)'
+          }
+        })
         break
     }
   }
@@ -117,6 +131,7 @@ class ListItem extends React.Component {
           Mobile: item.OwnerPhone,
           IDCard: item.OwnerIDCard,
           Name: item.OwnerName,
+          Img: item.CardIDFront && item.CardIDFront.length>0 ? item.CardIDFront[0].ImageLocation : '',
           ContractID: item.KeyID,
           type: 0
         })
@@ -125,6 +140,7 @@ class ListItem extends React.Component {
           Mobile: item.TenantPhone,
           IDCard: item.TenantCard,
           Name: item.TenantName,
+          Img: item.CardIDFront && item.CardIDFront.length>0 ? item.CardIDFront[0].ImageLocation : '',
           ContractID: item.KeyID,
           type: 1
         })
@@ -173,9 +189,9 @@ class ListItem extends React.Component {
       >
         <View style={style.headContainer}>
           <Text style={style.headTitle}>
-            {this.props.item.HouseName.length < 20
+            {this.props.item.HouseName && (this.props.item.HouseName.length < 20
               ? this.props.item.HouseName
-              : this.props.item.HouseName.slice(0, 18) + '...'}
+              : (this.props.item.HouseName.slice(0, 18) + '...'))}
           </Text>
           <Text
             style={{

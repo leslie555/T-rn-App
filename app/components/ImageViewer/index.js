@@ -1,6 +1,6 @@
 import { Modal, StatusBar, Text } from 'react-native'
 import React, { Component } from 'react'
-import ImageViewer from 'react-native-image-zoom-viewer'
+import ImageViewer from './react-native-image-zoom-viewer'
 import { getImgUrl, saveImage } from '../../utils/imgUnit'
 import ActionSheet from 'react-native-actionsheet'
 import Spinner from 'react-native-spinkit'
@@ -25,7 +25,17 @@ class ImageViewerComponent extends React.Component {
         this.setState({
           images: images.map((v, i) => {
             return {
-              url: getImgUrl(v.ImageLocation)
+              url: getImgUrl(v.ImageLocation),
+              // url: 'http://funrenting.oss-cn-beijing.aliyuncs.com/aa2018/logo.e429c4de.png?a=2266' + i,
+              props: {
+                source: {
+                  uri: getImgUrl(v.ImageLocation),
+                  // uri: 'http://funrenting.oss-cn-beijing.aliyuncs.com/aa2018/logo.e429c4de.png?a=2266' + i,
+                  headers: {
+                    Referer: 'https://www.51tanwo.com',
+                  }
+                }
+              }
             }
           })
         })

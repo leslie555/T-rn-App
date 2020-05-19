@@ -106,6 +106,14 @@ export function QueryApplyList(data) {
         data
     })
 }
+// 查看审批列表
+export function QueryApplyListAccordToJurisdiction(data) {
+  return request({
+      url:  '/system/ApplyAudit/QueryApplyListAccordToJurisdiction',
+      method: 'post',
+      data
+  })
+}
 
 // 查看审批详情
 export function QueryApplyByID(data) {

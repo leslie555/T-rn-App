@@ -5,7 +5,8 @@ import {getEnumDesByValue} from '../../../../utils/enumData'
 import {withNavigation} from 'react-navigation'
 import {connect} from 'react-redux'
 import {priceFormat} from '../../../../utils/priceFormat'
-import {dateFormat} from '../../../../utils/dateFormat'
+import {getThumbImgUrl} from "../../../../utils/imgUnit";
+import {AliImage} from "../../../../components";
 
 class ListItem extends React.Component {
   constructor(props) {
@@ -78,11 +79,22 @@ class ListItem extends React.Component {
     const item = this.props.item
     this.props.navigation.navigate('AgentHouseDetail', {
       HouseID: item.HouseID,
-      HouseKey: item.HouseKey
+      HouseKey: item.HouseKey,
+      ShareRentHouseID: item.HouseStatus === 5 ? item.HouseID : ''
+    })
+  }
+
+  goNear() {
+    const item = this.props.item
+    this.props.navigation.navigate('AgentNearHouseList', {
+      Lng: item.Lng,
+      Lat: item.Lat,
+      HouseID: item.HouseID
     })
   }
 
   render() {
+    const {item} = this.props
     return (
         <TouchableOpacity
             activeOpacity={0.4}
@@ -91,33 +103,36 @@ class ListItem extends React.Component {
             }}
             style={style.container}
         >
-          <View style={style.headContainer}>
-            <View style={style.headTitle}>
-              <Text style={style.headTitleLeft}>
-                {this.props.item.HouseName.length < 18
-                    ? this.props.item.HouseName
-                    : this.props.item.HouseName.slice(0, 16) + '...'}
+          <AliImage source={{uri: getThumbImgUrl(item.ImageLocation)}} style={style.left_img}/>
+          <View style={style.right_content}>
+            <View style={style.content_top}>
+              <Text style={style.content_title} numberOfLines={2}>{this.state.RentTypeName} {item.HouseName}</Text>
+              <View style={style.content_agent}>
+                <Text style={style.agent_title}>管房人：</Text>
+                <Text
+                    style={style.agent_text}>{item.TubUserName ? `${item.TubUserName} ${item.TubUserPhone}` : `无`}</Text>
+              </View>
+              <Text
+                  style={{
+                    ...style.content_status,
+                    color: this.state.HouseStatus.color
+                  }}
+              >
+                {this.state.HouseStatus.label}
               </Text>
-              <Text style={style.headTitleRight}>{this.state.RentTypeName}</Text>
             </View>
-            <Text
-                style={{
-                  ...style.headStatus,
-                  color: this.state.HouseStatus.color
-                }}
-            >
-              {this.state.HouseStatus.label}
-            </Text>
-          </View>
-          <View style={style.contentContainer}>
-            <View style={style.rowContainer}>
-              <View style={style.rowLeft}>
-                <Text style={style.itemTitle}>管房人：</Text>
-                <Text style={style.itemText}>{this.props.item.TubUserName?`${this.props.item.TubUserName} ${this.props.item.TubUserPhone}`:`无`}</Text>
+            <View style={style.content_bottom}>
+              <View style={style.content_price_box}>
+                <Text style={style.content_price}>{priceFormat(item.RentMoeny)}</Text>
+                <Text style={style.content_unit}> 元/月</Text>
               </View>
-              <View style={style.rowRight}>
-                <Text style={style.itemText}>{this.props.item.RentMoeny>0&&`${priceFormat(this.props.item.RentMoeny)}元/月`}</Text>
-              </View>
+              <TouchableOpacity
+                  style={style.content_btn}
+                  onPress={() => {
+                    this.goNear()
+                  }}>
+                <Text style={style.content_btn_text}>附近房源</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </TouchableOpacity>

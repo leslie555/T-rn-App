@@ -1,12 +1,14 @@
 import request from '../utils/request'
+import packageJson from '../../package.json'
 // 登陆
 export function Login(username, password) {
   return request({
-    url: '/SystemMethod/Login',
+    url: '/SystemMethod/LoginVersion',
     method: 'post',
     data: {
       LoginCode: username,
-      LoginPwd: password
+      LoginPwd: password,
+      Version: packageJson.version
     }
   })
 }

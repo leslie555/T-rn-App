@@ -3,6 +3,7 @@ import { Image, TouchableOpacity, View, StyleSheet } from 'react-native'
 import { DEVICE_WIDTH, DisplayStyle } from '../../styles/commonStyles'
 import { getThumbImgUrl } from '../../utils/imgUnit'
 import ImageViewer from '../ImageViewer'
+import AliImage from '../AliImage'
 
 export default class Header extends Component {
   constructor(props) {
@@ -41,7 +42,7 @@ export default class Header extends Component {
               style={{ ...style.imgItem, marginLeft: idx % 3 === 0 ? 0 : 10 }}
               key={idx}
             >
-              <Image
+              <AliImage
                 source={{
                   uri: getThumbImgUrl(val.ImageLocation)
                 }}

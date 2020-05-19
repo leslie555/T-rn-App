@@ -6,7 +6,7 @@ import {
   markSuccess,
   packageVersion,
   switchVersion
-} from './react-native-update'
+} from 'react-native-update'
 import {Alert, Linking, NativeAppEventEmitter, Platform} from 'react-native'
 import _updateConfig from '../../../update.json'
 import {setUpdateStatus} from "../../redux/actions/appUpdate"
@@ -46,7 +46,11 @@ const checkAppUpdate = function (type = 0) {
       })
       .catch(err => {
         if (type !== 0) {
-          Alert.alert('提示', '网络原因，检测更新失败.')
+          Alert.alert('温馨提示', '网络原因，检测更新失败，如果多次“检查更新”失败请尝试“重启App”、“切换网络”、“前往应用市场搜索弹窝重新下载安装”等方式。', [
+            {text: '重新检查更新', onPress: () => {
+              checkAppUpdate(1)
+            }}
+          ], {cancelable: false})
         }
       })
 }

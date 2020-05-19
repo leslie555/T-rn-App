@@ -38,3 +38,57 @@ export function SelectBookKeepByID(data) {
         data
     })
 }
+
+// 同意免租说明书--列表
+export function QueryAgreeRentFreeList(data) {
+    return request({
+      url: '/OwnerContract/OwnerContract/QueryAgreeRentFreeList',
+      method: 'post',
+      data
+    })
+}
+
+// 同意免租说明书--详情
+export function AgreeRentFreeDetail(data) {
+    return request({
+      url: '/OwnerContract/OwnerContract/QueryAgreeRentFreeInfo',
+      method: 'post',
+      data
+    })
+}
+
+// 同意免租说明书--新增
+export function InsertAgreeRentFree(data) {
+  return request({
+    url: '/OwnerContract/OwnerContract/InsertAgreeRentFree',
+    method: 'post',
+    data
+  })
+}
+
+// 同意免租说明书--修改
+export function UpdateAgreeRentFree(data) {
+    return request({
+      url: '/OwnerContract/OwnerContract/UpdateAgreeRentFree',
+      method: 'post',
+      data
+    })
+}
+
+// 同意免租说明书-签字查询
+export function QueryOwnerBookSignInfo(data) {
+    return request({
+      url: '/OwnerContract/OwnerContract/QueryOwnerBookSignInfo',
+      method: 'post',
+      data
+    })
+}
+
+// 同意免租说明书-暂存
+export function TempAgreeRentFreeInfo(data) {
+    return request({
+      url: '/OwnerContract/OwnerContract/TempAgreeRentFreeInfo',
+      method: 'post',
+      data
+    })
+}

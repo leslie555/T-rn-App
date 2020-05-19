@@ -8,7 +8,9 @@ import {
   TouchableOpacity,
   View,
   ActivityIndicator,
-  Platform
+  Platform,
+  Keyboard,
+  Alert
 } from 'react-native'
 import { connect } from 'react-redux'
 import { getAllEnumData, Login } from '../../../api/login'
@@ -19,6 +21,7 @@ import {
 } from '../../../redux/actions/user'
 import { getEnumList } from '../../../redux/actions/enum'
 import storage from '../../../utils/storage'
+import Toast from 'react-native-root-toast'
 
 const Spinner = require('react-native-spinkit')
 const DEVICE_WIDTH = Dimensions.get('window').width
@@ -43,6 +46,17 @@ class ButtonSubmit extends Component {
       this.props.dispatch(startAction)
       Login(username, password)
         .then(data => {
+          if (data.BusCode === 1) {
+            Alert.alert('温馨提示', '系统检测到当前不是最新版本，需要更新到最新版本才能正常使用！', [
+              {text: '检查更新', onPress: () => {
+                this.props.checkUpdate()
+              }}
+            ], {cancelable: false})
+            return reject()
+          }
+          if (!data.Data.jurisdic.Data.Module.length) {
+            return reject('您没有登录权限')
+          }
           if (isChecked) {
             storage.set('loginForm', {
               username,
@@ -54,6 +68,7 @@ class ButtonSubmit extends Component {
           }
           this.props.dispatch(logInAction(data.Data))
           storage.set('token', data.Data.Token)
+          storage.set('password', password)
           storage.set('userinfo', data.Data)
           resolve()
           getAllEnumData().then(res => {
@@ -72,11 +87,13 @@ class ButtonSubmit extends Component {
 
   _onPress() {
     if (this.state.isLoading) return
+    Keyboard.dismiss()
     this.setState({ isSpinnerVisible: true })
     this.setState({ isLoading: true })
     Animated.timing(this.buttonAnimated, {
       toValue: 1,
       duration: 200,
+      delay: 150,
       easing: Easing.linear
     }).start()
     this.login(
@@ -94,7 +111,13 @@ class ButtonSubmit extends Component {
           this.growAnimated.setValue(0)
         }, 800)
       })
-      .catch(() => {
+      .catch(err => {
+        if (err) {
+          Toast.show(err, {
+            duration: Toast.durations.SHORT,
+            position: Toast.positions.BOTTOM
+          })
+        }
         this.setState({ isLoading: false })
         Animated.timing(this.buttonAnimated, {
           toValue: 0,

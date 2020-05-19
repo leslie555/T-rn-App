@@ -53,7 +53,6 @@ export default class ListItem extends Component {
   }
 
   render() {
-    debugger
     const item = this.props.item
     const DisplayState = this.getDisplayStateText(item)
     const isSelected = this.props.billIds.includes(item.KeyID)
@@ -98,7 +97,7 @@ export default class ListItem extends Component {
             <View style={style.bill_number_container}>
               <View style={style.bill_info}>
                 <Text style={style.bill_number_title}>项目：</Text>
-                <Text style={style.bill_number}>{item.ProjectName}</Text>
+                <Text style={style.bill_number}>{item.ProjectName.length > 20 ? item.ProjectName.slice(0, 20) : item.ProjectName}</Text>
               </View>
               <Text style={style.bill_money}>¥{item.ReceivableMoney}</Text>
             </View>

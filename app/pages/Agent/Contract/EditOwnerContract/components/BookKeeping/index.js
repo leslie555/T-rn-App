@@ -89,22 +89,28 @@ export default class BookKeeping extends React.Component {
   }
 
   handleBillAdd() {
+    debugger
     this.props.navigation.navigate('AgentAddBookKeeping', {
       data: {
         uuid: uuid(),
         editType: 0,
+        RentType: this.props.houseInfo.RentType || 1,
         HouseName: this.getHouseName()
-      }
+      },
+      busType: this.props.type
     })
   }
 
   handleBillEdit(item) {
+    debugger
     item.uuid = uuid()
     this.props.navigation.navigate('AgentAddBookKeeping', {
       data: {
         ...item,
+        RentType: this.props.houseInfo.RentType || 1,
         HouseName: this.getHouseName()
       },
+      busType: this.props.type,
       editType: 1
     })
   }

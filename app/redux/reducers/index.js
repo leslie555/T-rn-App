@@ -15,6 +15,8 @@ import list from './list'
 import account from './account'
 import accountDetail from './accountDetail'
 import renovationDetail from './renovationDetail'
+import movingDetail from './movingDetail'
+
 
 
 
@@ -35,4 +37,5 @@ export default combineReducers({
   account,
   accountDetail,
   renovationDetail,
+  movingDetail
 })

@@ -70,16 +70,12 @@ class RenovationApplyList extends Component {
     //     }
     //   }
     // )
-    // this.isCompanyLeader = false
   }
 
   componentWillMount() {
-    this.isCompanyLeader = this.props.userInfo.IsCompanyLeader
-    if (this.isCompanyLeader) {
-      this.state.listConfig[0].data.splice(1, 1)
-    }
+
   }
-  
+
   // componentWillUnmount() {
   //   this.willFocusSubscription.remove()
   // }
@@ -99,7 +95,7 @@ class RenovationApplyList extends Component {
 
   renderContent = () => {
     const renderItem = ({ item }) => {
-        return <ListItem item={item} isCompanyLeader={this.isCompanyLeader} />
+        return <ListItem item={item} />
     }
     return (
       <List
@@ -122,7 +118,7 @@ class RenovationApplyList extends Component {
       form
     })
   }
-  
+
   _onChangeText = text => {
     this.reset(text)
   }
@@ -147,13 +143,13 @@ class RenovationApplyList extends Component {
         <Header
           title="装修申请"
           headerRight={
-            <View style={[styles.searchAdd, {marginRight: this.isCompanyLeader ? 20 : 10}]}>
+            <View style={[styles.searchAdd, {marginRight: 10}]}>
               <TouchableOpacity
                 onPress={() => this.setState({ isShowSearch: true })}
               >
                 <IconFont name="search" size={20} color="white" />
               </TouchableOpacity>
-              {!this.isCompanyLeader && (<TouchableOpacity
+              <TouchableOpacity
                 onPress={() => {
                   this.props.navigation.navigate("AgentAddRenovationApply", {
                     type: 1
@@ -161,7 +157,7 @@ class RenovationApplyList extends Component {
                 }}
               >
                 <Text style={styles.add}>新增</Text>
-              </TouchableOpacity>)}
+              </TouchableOpacity>
             </View>
           }
         >

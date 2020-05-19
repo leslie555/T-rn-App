@@ -11,6 +11,8 @@ function getEnumListByKey(key) {
 function getEnumDesByValue(key, val) {
     const list = getEnumListByKey(key)
     const data = list.find(v => v.Value == val)
+    if (data && data.Description === '无意义') return ''
+    if (data && data.Description === '请选择') return ''
     return data ? data.Description : null
 }
 // 根据枚举key 和 name获取value

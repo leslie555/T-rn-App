@@ -60,6 +60,7 @@ export default class ViewContractPDF extends React.Component {
             onLoadProgress={({ nativeEvent }) => {
               this.handleLoading(nativeEvent.progress)
             }}
+            mixedContentMode='always'
             cacheEnabled={false}
             style={styles.webBox}
           />

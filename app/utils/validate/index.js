@@ -5,6 +5,11 @@ const validatePhoneNumber = function (val) {
   return reg.test(val)
 }
 
+const validateCard = function (val) {
+  if (!val) return true
+  return val && val.length === 18 || val && val.length === 15
+}
+
 // 验证数字格式
 const validateNumber = function (val, options) {
   if (!val) return true
@@ -24,7 +29,16 @@ const validateNumber = function (val, options) {
   return true
 }
 
+// 验证电子邮箱格式
+const validateEmailNumber = function (val) {
+  if (!val) return true
+  const reg = /^(\w-*\.*)+@(\w-?)+(\.\w{2,})+$/
+  return reg.test(val)
+}
+
 export {
   validatePhoneNumber,
-  validateNumber
+  validateNumber,
+  validateCard,
+  validateEmailNumber
 }

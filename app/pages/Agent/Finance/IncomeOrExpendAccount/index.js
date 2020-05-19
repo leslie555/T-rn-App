@@ -3,24 +3,14 @@ import {
     Text,
     TouchableOpacity,
     View,
-    FlatList,
-    Alert,
-    Linking,
-    RefreshControl,
-    Dimensions,
-    TouchableWithoutFeedback} from 'react-native'
-    import ScrollableTabView from 'react-native-scrollable-tab-view'
+  } from 'react-native'
 import styles from './style'
 import IconFont from '../../../../utils/IconFont/index'
 // import SearchBar from '../../../../components/SearchBar'
-import ListLoading from "../../../../components/ListLoading";
-import EmptyList from "../../../../components/EmptyList";
-import ListFooterComponent from "../../../../components/ListFooterComponent";
-import { List , Header , SearchBar , ListSelector , Picker} from '../../../../components'
+import { List , Header , SearchBar , AddShopListSelector , Picker, ListSelector} from '../../../../components'
 import { TopMenuItem } from '../../../../components/ListSelector'
 
 import {SelectBookKeepPage} from '../../../../api/personalAccount'
-import { QueryBillItem } from '../../../../api/owner'
 //redux
 import { connect } from 'react-redux'
 import { accountList } from '../../../../redux/actions/account'
@@ -32,7 +22,9 @@ class Account extends React.Component {
 
     constructor(props) {
         super(props);
-        this.currentCItem = {}
+        this.currentCItem = {},
+        this.AddShopListSelector = null
+        this.ListSelector = null
         this.state = {
             //接口接受的数据
             billProject: [],
@@ -59,7 +51,6 @@ class Account extends React.Component {
                 type: 1,
                 StartTime :'',
                 EndTime :'',
-                  /// 1未收   2已收   3未支   4已支  5 逾期
                 InOrOutStatus :'',
                 ProjectID:'',
 
@@ -108,8 +99,6 @@ class Account extends React.Component {
                 }
               ]
         }
-
-        this.ListSelector = null
     }
     //进入新增页面
     addNewAccount(){
@@ -165,7 +154,6 @@ class Account extends React.Component {
     }
 
     onSelectMenu = (index, subindex, data) => {
-
         console.log(index, subindex, data)
         // index = 0  为第一个
         // index = 2  为更多
@@ -292,6 +280,7 @@ class Account extends React.Component {
         })
     }
     componentDidMount(){
+        // this.getShopData()
         //判断进入的是哪个页面  收入记账 or 支出记账
         let label = this.props.navigation.state.params.label;
         if(label == '收入记账'){
@@ -397,13 +386,25 @@ class Account extends React.Component {
                     this.setState({billProjectVisible: false})
                     }}
                 />
-                <ListSelector
-                    ref={ListSelector => (this.ListSelector = ListSelector)}
+                {/* <AddShopListSelector
+                    // 不传  代表没有门店
+                    ref={(ref) => {
+                        this.AddShopListSelector = ref
+                      }}
+                    // selectShop={2}
                     config={this.state.listConfig}
                     onSelectMenu={this.onSelectMenu}
                     renderContent={this.renderContent}
                     customComponent={customComponent}
-                />
+                    /> */}
+                    <ListSelector
+                     ref={(ref) => {
+                        this.ListSelector = ref
+                      }}
+                      config={this.state.listConfig}
+                    onSelectMenu={this.onSelectMenu}
+                    renderContent={this.renderContent}
+                    customComponent={customComponent}/>
             </View>
         )
     }

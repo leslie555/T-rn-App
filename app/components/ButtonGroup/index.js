@@ -6,16 +6,50 @@ import {
   DEVICE_WIDTH
 } from '../../styles/commonStyles'
 import Button from './Button'
+import { getButtons } from '../../utils/buttonPermission'
 export default class ButtonGroup extends Component {
   constructor(props) {
     super(props)
+    this.state = {
+      permittedBtns: []
+    }
   }
   static defaultProps = {
     options: [],
-    hasIcon: false
+    isIconContainer: false
+  }
+  componentDidMount() {
+    getButtons(this.props.permissionTag).then(btns => {
+      let permittedBtns = this.props.options
+      if (this.props.permissionTag) {
+        const btnEActionNames = btns.map(v => v.EActionName)
+        permittedBtns = this.props.options.filter(v =>
+          btnEActionNames.includes(v.value)
+        )
+      }
+      this.setState({
+        permittedBtns
+      })
+    })
+  }
+  componentWillReceiveProps(nextProps) {
+    if (this.props.options !== nextProps.options) {
+      getButtons(nextProps.permissionTag).then(btns => {
+        let permittedBtns = this.props.options
+        if (nextProps.permissionTag) {
+          const btnEActionNames = btns.map(v => v.EActionName)
+          permittedBtns = nextProps.options.filter(v =>
+            btnEActionNames.includes(v.value)
+          )
+        }
+        this.setState({
+          permittedBtns
+        })
+      })
+    }
   }
   getButtons(len) {
-    if (this.props.hasIcon) {
+    if (this.props.isIconContainer) {
       const width = DEVICE_WIDTH / len
       return {
         width,
@@ -40,31 +74,32 @@ export default class ButtonGroup extends Component {
     }
   }
   render() {
-    const { options } = this.props
-    const len = options.length
+    const { isIconContainer } = this.props
+    const { permittedBtns } = this.state
+    const len = permittedBtns.length
     const btnStyle = this.getButtons(len)
-    const buttons = options.map((val, idx) => (
+    const buttons = permittedBtns.map((val, idx) => (
       <Button
+        isIconContainer={isIconContainer}
         title={val.label}
-        hasIcon={this.props.hasIcon}
         color={val.color}
-        require={val.require}
+        imgSource={val.imgSource}
         iconName={val.iconName}
         btnStyle={{ ...btnStyle, ...val.style }}
         isLoading={this.props['is' + val.value + 'Loading']}
         isDisabled={val.isDisabled}
-        hasImage={this.props.hasImage}
         onPress={() => {
           this.props['handle' + val.value + 'Click']()
         }}
         key={idx}
       />
     ))
-    return options.length ? (
+    return permittedBtns.length ? (
       <View
         style={[
-          this.props.hasIcon ? style.hasIconContainer : style.detail_page_bottom, this.props.btnConStyle]
-        }
+          isIconContainer ? style.hasIconContainer : style.detail_page_bottom,
+          this.props.btnConStyle
+        ]}
       >
         {buttons}
       </View>

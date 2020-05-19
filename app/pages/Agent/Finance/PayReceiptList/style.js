@@ -33,6 +33,7 @@ const style = StyleSheet.create({
         shadowOpacity: 0.5,
         shadowRadius: 5,
         shadowColor: '#cccccc',
+        zIndex:10
         // 安卓阴影
         // elevation: 4
     },
@@ -102,7 +103,7 @@ const style = StyleSheet.create({
     },
     search_icon: {
         marginRight: 20
-    },
+    }
 })
 
 export default style

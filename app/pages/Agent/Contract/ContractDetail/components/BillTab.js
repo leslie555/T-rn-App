@@ -13,6 +13,7 @@ import recieved from '../images/recieved.png'
 import unrecieve from '../images/unrecieve.png'
 import unpay from '../images/unpay.png'
 import paid from '../images/paid.png'
+import waitRecieve from '../images/waitRecieve.png'
 import { priceFormat } from '../../../../../utils/priceFormat'
 
 export default class SignUpTab extends React.Component {
@@ -58,10 +59,25 @@ export default class SignUpTab extends React.Component {
           </Text>
         </View>
         {this.state.bill.map((val, idx) => {
+          const billDetail = this.props.isOwner
+            ? val.OwnerBillDetail
+            : val.TenantBillDetail
+          const allBill = billDetail.reduce(
+            (pre, cur) => {
+              return {
+                allBillIn: pre.allBillIn + (cur.InOrOut === 1 ? cur.Amount : 0),
+                allBillOut:
+                  pre.allBillOut + (cur.InOrOut === 2 ? cur.Amount : 0)
+              }
+            },
+            {
+              allBillIn: 0,
+              allBillOut: 0
+            }
+          )
           let icon = null
-          if (val.PaidDate) {
-            icon = this.props.isOwner ? paid : recieved
-          } else {
+          if (val.IsActual === 0) {
+            // 未收/付
             const delta =
               new Date(val.ReceivablesDate).getTime() - new Date().getTime()
             if (delta > 0) {
@@ -69,6 +85,11 @@ export default class SignUpTab extends React.Component {
             } else {
               icon = outOfTime
             }
+          } else if (val.IsActual === 1) {
+            // 待收
+            icon = this.props.isOwner ? paid : recieved
+          } else if (val.IsActual === 2) {
+            icon = waitRecieve
           }
           return (
             <View style={style.billContainer} key={idx}>
@@ -80,16 +101,23 @@ export default class SignUpTab extends React.Component {
                 }}
               >
                 <Text style={style.bold}>账期{cn.encodeS(idx + 1)}</Text>
-                {icon === outOfTime && (
-                  <Text style={style.outOfTimeText}>
-                    逾期
-                    {diffTime(val.ReceivablesDate, new Date())}
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={{ ...style.bold, marginRight: 8 }}>
+                    ￥{priceFormat(val.BillAmount)}
                   </Text>
-                )}
+                  {icon === outOfTime && (
+                    <Text style={style.outOfTimeText}>
+                      逾期
+                      {diffTime(val.ReceivablesDate, new Date())}
+                    </Text>
+                  )}
+                </View>
               </View>
               <View style={style.billRow}>
                 <Text>应付款日: {dateFormat(val.ReceivablesDate)}</Text>
-                <Text style={style.bold}>￥{priceFormat(val.BillAmount)}</Text>
+                <Text>
+                  收入{priceFormat(allBill.allBillIn)}-支出{priceFormat(allBill.allBillOut)}
+                </Text>
               </View>
               <Image style={style.image} source={icon} />
             </View>

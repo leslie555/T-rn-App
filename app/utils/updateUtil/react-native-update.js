@@ -5,7 +5,7 @@
 const HotUpdate = require('react-native').NativeModules.HotUpdate;
 import {NativeAppEventEmitter} from 'react-native';
 
-let host = 'https://update.reactnative.cn/api';
+let host = 'https://update.react-native.cn/api';
 
 export const downloadRootDir = HotUpdate.downloadRootDir;
 export const packageVersion = HotUpdate.packageVersion;
@@ -60,26 +60,26 @@ export async function downloadUpdate(options) {
   if (!options.update) {
     return;
   }
-  if (options.platform === 'android') {
-    // android 约定全量更新 diff算法太长
-    if (options.diffUrl) {
-      await HotUpdate.downloadPatchFromPpk({
-        updateUrl: options.diffUrl,
-        hashName: options.hash,
-        originHashName: currentVersion,
-      });
-    } else if (options.updateUrl) {
-      await HotUpdate.downloadUpdate({
-        updateUrl: options.updateUrl,
-        hashName: options.hash,
-      });
-    } else {
-      await HotUpdate.downloadPatchFromPackage({
-        updateUrl: options.pdiffUrl,
-        hashName: options.hash,
-      });
-    }
-  } else {
+  // if (options.platform === 'android') {
+  //   // android 约定全量更新 diff算法太长
+  //   if (options.diffUrl) {
+  //     await HotUpdate.downloadPatchFromPpk({
+  //       updateUrl: options.diffUrl,
+  //       hashName: options.hash,
+  //       originHashName: currentVersion,
+  //     });
+  //   } else if (options.updateUrl) {
+  //     await HotUpdate.downloadUpdate({
+  //       updateUrl: options.updateUrl,
+  //       hashName: options.hash,
+  //     });
+  //   } else {
+  //     await HotUpdate.downloadPatchFromPackage({
+  //       updateUrl: options.pdiffUrl,
+  //       hashName: options.hash,
+  //     });
+  //   }
+  // } else {
     if (options.diffUrl) {
       await HotUpdate.downloadPatchFromPpk({
         updateUrl: options.diffUrl,
@@ -97,7 +97,7 @@ export async function downloadUpdate(options) {
         hashName: options.hash,
       });
     }
-  }
+  // }
   return options.hash;
 }
 

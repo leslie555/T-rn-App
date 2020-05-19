@@ -42,7 +42,7 @@ export default StyleSheet.create({
     opacity: .5
   },
   upload_btn: {
-    ...DisplayStyle('row', 'center', 'center'),
+    ...DisplayStyle('column', 'center', 'center'),
     width: imgWidth,
     height: imgWidth,
     borderColor: '#c0ccda',
@@ -50,5 +50,30 @@ export default StyleSheet.create({
     borderStyle: 'dashed',
     backgroundColor: '#fefefe',
     borderRadius:0.1
+  },
+  upload_btn_text: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 5
+  },
+  upload_cover_btn: {
+    ...DisplayStyle('row', 'center', 'center'),
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 23,
+    backgroundColor: '#389ef2'
+  },
+  upload_cover_btn_text: {
+    fontSize: 12,
+    color: '#fff'
+  },
+  cover_image: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 23,
+    height: 23,
   }
 })

@@ -106,3 +106,12 @@ export function DeleteReceiptNew(data) {
     data
   })
 }
+
+// 删除付款单
+export function DeletePaymentNew(data) {
+  return request({
+    url: '/System/FinanceNew/DeletePaymentNew',
+    method: 'post',
+    data
+  })
+}

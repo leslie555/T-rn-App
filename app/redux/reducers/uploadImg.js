@@ -1,8 +1,13 @@
 import { handleActions } from 'redux-actions'
 import { SET_UPLOADIMG, REMOVE_UPLOADIMG } from '../actionTypes'
-import AgentAddRepairCleanApply from "../../pages/Agent/RenovationApply/AddCleanRepairApply";
+import AgentAddRepairCleanApply from '../../pages/Agent/RenovationApply/AddCleanRepairApply'
 const initState = {
   AgentEditOwnerContract: {},
+  AgentEditOwnerContractAgentCardIDFront: [],
+  AgentEditOwnerContractAgentCardIDBack: [],
+  AgentEditOwnerContractNoMoveOwn: [],
+  AgentEditTenantContractCardIDFront: [],
+  AgentEditTenantContractCardIDBack: [],
   AgentEditTenantContract: {},
   AgentAddRenovationApply: {},
   EditOwnerResource: {},
@@ -10,9 +15,13 @@ const initState = {
   SetFixtures: {},
   AddRepair: {},
   EditPayReceipt: {},
+  RentFreeStatement: {},
+  ContractRemoveAgree: {},
   AgentEditCashBook: {},
   AgentCheckOutContract: {},
+  AgentWriteOff: {},
   AgentAddRepairCleanApply: {},
+  AgentAddMoveApply: {}
 }
 
 const setUploadImg = handleActions(

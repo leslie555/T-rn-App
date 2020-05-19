@@ -4,7 +4,7 @@ import {createAppContainer, createStackNavigator, createSwitchNavigator} from 'r
 import AuthLoadingScreen from '../pages/Common/Login/AuthLoadingScreen'
 import LoginScreen from '../pages/Common/Login/LoginScreen'
 import AgentRootStack from './AgentRouter'
-
+import AuthStackLogin from './AppAuthLogin'
 
 export default class AppContainer extends React.Component {
   constructor(props) {
@@ -13,14 +13,15 @@ export default class AppContainer extends React.Component {
 
   render() {
     const ManageRootStack = createStackNavigator({Login: LoginScreen}) //预留管理端
-    const AuthStack = createStackNavigator({Login: LoginScreen}) // 预留注册相关页面的配置
+    // const AuthStack = createStackNavigator({Login: LoginScreen}) // 预留注册相关页面的配置
     const AppContainer = createAppContainer(
         createSwitchNavigator(
             {
               AuthLoading: AuthLoadingScreen,
               AgentApp: AgentRootStack,
               ManageApp: ManageRootStack,
-              Auth: AuthStack,
+              // Auth: AuthStack
+              Auth: AuthStackLogin
             },
             {
               headerMode: 'none',

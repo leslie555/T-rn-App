@@ -144,13 +144,21 @@ const diffTime = (time1, time2, type = 0) => {
       }
       const calcTime =
         (time2Obj.getTime() - time1ObjClone.getTime()) / 3600000 / 24
-      str += calcTime + '天'
-      strArr[2] = calcTime
-    } else {
-      str += diffDate + '天'
-      strArr[2] = diffDate
+        if (calcTime > 0) {
+          str += calcTime + '天'
+          strArr[2] = calcTime
+        } else {
+          strArr[2] = ''
+        }
+      } else {
+        if (diffDate > 0) {
+          str += diffDate + '天'
+          strArr[2] = diffDate
+        } else {
+          strArr[2] = ''
+        }
+      }
     }
-  }
   return type === 0 ? str : strArr
 }
 // 显示时间转换

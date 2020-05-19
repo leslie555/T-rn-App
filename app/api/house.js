@@ -52,6 +52,15 @@ export function ShowCompanyinfoCityCode(data = {}) {
   })
 }
 
+// 查询商圈数组
+export function SelectBusinessCircle(data = {}) {
+  return request({
+    url: '/SystemMethod/SelectBusinessCircle',
+    method: 'post',
+    data
+  })
+}
+
 // 拿房测算
 export function InOfHouse(data) {
   return request({
@@ -226,6 +235,14 @@ export function SelectMyHouseCount(data) {
     data
   })
 }
+// 附近房源列表
+export function SelectNearHouseList(data) {
+  return request({
+    url: '/MCommunity/ShowNearShareHousesPage',
+    method: 'post',
+    data
+  })
+}
 
 // 查看装修申请列表
 export function SelectRenovationApplyList(data) {
@@ -279,7 +296,46 @@ export function ApprovalRenovationApplication(data) {
     data,
   })
 }
+// 是否可租
+export function ShowHouseInfoFieldByHousekey(data) {
+  return request({
+    url: '/DownloadCenterMethod/ShowHouseInfoFieldByHousekey',
+    method: 'post',
+    data
+  })
+}
+// 修改房源不续约状态
+export function EditHouseWhetherRentOut(data) {
+  return request({
+    url: '/DownloadCenterMethod/EditHouseInfoFieldWhetherRentOut',
+    method: 'post',
+    data
+  })
+}
 
+// 查询房源不续约状态
+export function FindHouseWhetherRentOut(data) {
+  return request({
+    url: '/DownloadCenterMethod/ShowHouseInfoFieldWhetherRentOut',
+    method: 'post',
+    data
+  })
+}
 
+// 查询城市街道list
+export function ShowStreetByCityCodeList(data = {}) {
+  return request({
+    url: '/UniversalVersionMethod/ShowStreetByCityCodeList',
+    method: 'post',
+    data
+  })
+}
 
-
+// 根据房源id查询预订单
+export function QueryOrderByHouseID(data = {}) {
+  return request({
+    url: '/TenantContract/QueryOrderByHouseID',
+    method: 'post',
+    data
+  })
+}

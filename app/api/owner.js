@@ -8,6 +8,14 @@ export function AppGetContractOwnerList(data) {
     data
   })
 }
+// App获取业主合同列表
+export function AppFindOwnerContractListPage(data) {
+  return request({
+    url: '/OwnerContract/OwnerContract/AppFindOwnerContractListPage',
+    method: 'post',
+    data
+  })
+}
 // 获取业主电子签约合同列表
 export function QueryOwnerElectronicList(data) {
   return request({
@@ -142,6 +150,15 @@ export function mobileOwnerSign(data) {
   })
 }
 
+// 签字阿里云认证
+export function personALYAuth(data) {
+  return request({
+    url: '/FDD/FDD/ALYRealNameAuthentication',
+    method: 'post',
+    data
+  })
+}
+
 // 签字个人认证
 export function personAuth(data) {
   return request({
@@ -225,6 +242,14 @@ export function RemoveBookKeepByIDs(data) {
 export function UpdateBookKeepByIDs(data) {
   return request({
     url: '/OperateMethod/UpdateBookKeep',
+    method: 'post',
+    data
+  })
+}
+//  存参数
+export function AddRealNameAuthenticateNeed(data) {
+  return request({
+    url: '/FDD/FDD/AddRealNameAuthenticateNeed',
     method: 'post',
     data
   })

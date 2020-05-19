@@ -58,7 +58,14 @@ module.exports = createReactClass({
           {this.props.rightItem || (
             <Text
               numberOfLines={1}
-              style={[this.getStyle('modalValue'),this.props.value&&this.props.value!=='请选择'?{color:'#333'}:null, this.props.rightTextStyle]}
+              style={[
+                this.getStyle('modalValue'),
+                this.props.value && this.props.value !== '请选择'
+                  ? { color: '#333' }
+                  : null,
+                this.props.rightTextStyle,
+                this.props.disabled ? { color: '#888' } : null
+              ]}
             >
               {this.props.value || '请选择'}
             </Text>
@@ -98,7 +105,7 @@ module.exports = createReactClass({
       borderBottomWidth: 1,
       borderColor: '#eee'
     },
-    underlayColor: '#c7c7cc',
+    underlayColor: '#eee',
     row: {
       flexDirection: 'row',
       height: 44,
